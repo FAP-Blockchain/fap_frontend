@@ -1,19 +1,21 @@
 import { Layout, Menu } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   adminRoutes,
   publicPortalRoutes,
   studentPortalRoutes,
   teacherRoutes,
 } from "../config/appRoutes";
-import { ROLE_CODES } from "../constants/roles";
+import { ROLE_CODES, type RoleCode } from "../constants/roles";
 import {
   getMainNavItems,
   getToolsNavItems,
   SECTION_TITLES,
   type MenuItem,
 } from "../utils/menuUtils";
+import type { RootState } from "../redux/store";
 import "./index.scss";
 
 const { Sider } = Layout;
@@ -29,10 +31,8 @@ const SiderComponent: React.FC<SiderProps> = ({ collapsed }) => {
   const [mounted, setMounted] = useState(false);
 
   // Get user info from Redux
-  // const { userProfile } = useSelector((state: RootState) => state.auth);
-  // const userRole = (userProfile?.roleCode || "") as RoleCode;
-
-  const userRole = ROLE_CODES.STUDENT;
+  const { userProfile } = useSelector((state: RootState) => state.auth);
+  const userRole = (userProfile?.roleCode || ROLE_CODES.GUEST) as RoleCode;
 
   // Generate menu items from App routes (memoized for performance)
   const mainNavItems = useMemo(
@@ -47,6 +47,46 @@ const SiderComponent: React.FC<SiderProps> = ({ collapsed }) => {
   );
 
   const toolsNavItems = useMemo(() => getToolsNavItems(adminRoutes), []);
+
+  // Update selectedKeys when userRole changes
+  useEffect(() => {
+    if (userRole && pathname) {
+      // For the home page
+      if (pathname === "/admin" || pathname === "/admin/") {
+        setSelectedKeys(["/admin/dashboard"]);
+      }
+      // For specific admin pages, match with the second path segment
+      else if (pathname.startsWith("/admin/")) {
+        const pathSegments = pathname.split("/");
+        if (pathSegments.length >= 3) {
+          // Handle danh-muc sub-items
+          if (pathSegments[2] === "danh-muc" && pathSegments.length >= 4) {
+            setSelectedKeys([`/admin/danh-muc/${pathSegments[3]}`]);
+          } else {
+            setSelectedKeys([`/admin/${pathSegments[2]}`]);
+          }
+        }
+      }
+      // For teacher routes
+      else if (pathname.startsWith("/teacher/")) {
+        const pathSegments = pathname.split("/");
+        if (pathSegments.length >= 3) {
+          setSelectedKeys([`/teacher/${pathSegments[2]}`]);
+        } else {
+          setSelectedKeys(["/teacher"]);
+        }
+      }
+      // For student portal routes
+      else if (pathname.startsWith("/student-portal/")) {
+        const pathSegments = pathname.split("/");
+        if (pathSegments.length >= 3) {
+          setSelectedKeys([`/student-portal/${pathSegments[2]}`]);
+        } else {
+          setSelectedKeys(["/student-portal"]);
+        }
+      }
+    }
+  }, [userRole, pathname]);
 
   // Debug: Log menu items
   console.log("🔍 Debug Info:", {
@@ -79,28 +119,10 @@ const SiderComponent: React.FC<SiderProps> = ({ collapsed }) => {
     [userRole]
   );
 
-  // Get current selected menu item based on path
+  // Initialize mounted state
   useEffect(() => {
-    if (pathname) {
-      // For the home page
-      if (pathname === "/admin" || pathname === "/admin/") {
-        setSelectedKeys(["/admin/dashboard"]);
-      }
-      // For specific admin pages, match with the second path segment
-      else if (pathname.startsWith("/admin/")) {
-        const pathSegments = pathname.split("/");
-        if (pathSegments.length >= 3) {
-          // Handle danh-muc sub-items
-          if (pathSegments[2] === "danh-muc" && pathSegments.length >= 4) {
-            setSelectedKeys([`/admin/danh-muc/${pathSegments[3]}`]);
-          } else {
-            setSelectedKeys([`/admin/${pathSegments[2]}`]);
-          }
-        }
-      }
-    }
     setMounted(true);
-  }, [pathname]);
+  }, []);
 
   // Filter menu items based on user permissions
   const filteredMainNavItems = useMemo(
@@ -201,11 +223,11 @@ const SiderComponent: React.FC<SiderProps> = ({ collapsed }) => {
           <>
             <div className="menu-divider" />
             <div className="sidebar-footer">
-              <div className="footer-link">Trợ giúp</div>
-              <div className="footer-link">Hỗ trợ</div>
-              <div className="footer-link">Liên hệ</div>
-              <div className="footer-link">Điều khoản</div>
-              <div className="footer-link">Chính sách</div>
+              <div className="footer-link">Help</div>
+              <div className="footer-link">Support</div>
+              <div className="footer-link">Contact</div>
+              <div className="footer-link">Terms</div>
+              <div className="footer-link">Privacy</div>
               <div className="footer-copyright">
                 © 2024 FAP Blockchain System
               </div>

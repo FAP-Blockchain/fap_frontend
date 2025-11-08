@@ -11,6 +11,10 @@ import type {
   ResetPasswordWithOtpRequest,
   OtpResponse,
   LogoutResponse,
+  RegisterUserRequest,
+  RegisterUserResponse,
+  BulkRegisterRequest,
+  BulkRegisterResponse,
 } from "../../Types/Auth";
 
 class AuthServices {
@@ -80,6 +84,32 @@ class AuthServices {
   ): Promise<OtpResponse> {
     const response = await api.post<OtpResponse>(
       "/Auth/reset-password-with-otp",
+      params
+    );
+    return response.data;
+  }
+
+  /**
+   * Register a new user (Admin only)
+   */
+  static async registerUser(
+    params: RegisterUserRequest
+  ): Promise<RegisterUserResponse> {
+    const response = await api.post<RegisterUserResponse>(
+      "/Auth/register",
+      params
+    );
+    return response.data;
+  }
+
+  /**
+   * Bulk register multiple users (Admin only)
+   */
+  static async bulkRegister(
+    params: BulkRegisterRequest
+  ): Promise<BulkRegisterResponse> {
+    const response = await api.post<BulkRegisterResponse>(
+      "/Auth/register/bulk",
       params
     );
     return response.data;

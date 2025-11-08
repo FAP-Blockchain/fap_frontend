@@ -73,13 +73,13 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
           <Result
             status="403"
             title="403"
-            subTitle="Xin lỗi, bạn không có quyền truy cập trang này."
+            subTitle="Sorry, you do not have permission to access this page."
             icon={
               <LockOutlined style={{ fontSize: "72px", color: "#ff4d4f" }} />
             }
             extra={
               <Button type="primary" onClick={() => navigate(-1)}>
-                Quay lại
+                Go Back
               </Button>
             }
           />

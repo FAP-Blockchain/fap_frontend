@@ -39,6 +39,25 @@ export interface ResetPasswordWithOtpRequest {
   confirmPassword: string;
 }
 
+export interface RegisterUserRequest {
+  fullName: string;
+  email: string;
+  password: string;
+  roleName: "Student" | "Teacher";
+  // Student fields (optional)
+  studentCode?: string;
+  enrollmentDate?: string; // ISO date string
+  // Teacher fields (optional)
+  teacherCode?: string;
+  hireDate?: string; // ISO date string
+  specialization?: string;
+  phoneNumber?: string;
+}
+
+export interface BulkRegisterRequest {
+  users: RegisterUserRequest[];
+}
+
 // ==================== Response Types ====================
 
 export interface LoginResponse {
@@ -66,6 +85,22 @@ export interface OtpResponse {
 
 export interface LogoutResponse {
   message: string;
+}
+
+export interface RegisterUserResponse {
+  success: boolean;
+  message: string;
+  userId?: string;
+  email: string;
+  roleName: string;
+  errors?: string[];
+}
+
+export interface BulkRegisterResponse {
+  totalRequested: number;
+  successCount: number;
+  failureCount: number;
+  results: RegisterUserResponse[];
 }
 
 // ==================== User Profile Type ====================

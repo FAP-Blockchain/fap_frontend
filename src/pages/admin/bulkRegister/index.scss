@@ -1,0 +1,18 @@
+@use "../../../styles/variables" as *;
+
+.bulk-register-container {
+  padding: 24px;
+
+  .ant-card {
+    border-radius: 8px;
+  }
+}
+
+.bulk-register-header {
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    color: $primary-color;
+  }
+}

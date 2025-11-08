@@ -3,6 +3,7 @@
  * Provides utilities to check user roles and permissions
  */
 
+import { useSelector } from "react-redux";
 import {
     PERMISSIONS,
     type Permission,
@@ -13,14 +14,14 @@ import {
     hasAnyPermission as checkAnyPermission,
     hasPermission as checkPermission,
 } from "../constants/roles";
+import type { RootState } from "../redux/store";
 
 /**
  * Hook to get current user's role and permission checking utilities
  */
 export const useRoleAccess = () => {
-//   const { userProfile } = useSelector((state: RootState) => state.auth);
-    //   const currentRole = (userProfile?.roleCode || "") as RoleCode;
-    const currentRole = ROLE_CODES.STUDENT as RoleCode;
+  const { userProfile } = useSelector((state: RootState) => state.auth);
+  const currentRole = (userProfile?.roleCode || ROLE_CODES.GUEST) as RoleCode;
 
   /**
    * Check if current user has a specific role
@@ -130,7 +131,7 @@ export const useRoleAccess = () => {
   return {
     // User info
     currentRole,
-    // userProfile,
+    userProfile,
 
     // Role checking
     hasRole,
