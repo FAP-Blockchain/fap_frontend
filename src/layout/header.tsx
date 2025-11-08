@@ -3,13 +3,32 @@ import {
   MenuUnfoldOutlined,
   QuestionCircleOutlined,
   SearchOutlined,
+  UserOutlined,
+  EditOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+  GlobalOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
-import { Button, Layout, Tooltip, theme } from "antd";
-
+import {
+  Button,
+  Layout,
+  Tooltip,
+  theme,
+  Dropdown,
+  Avatar,
+  Typography,
+} from "antd";
+import type { MenuProps } from "antd";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "../redux/store";
+import { logout } from "../redux/features/authSlice";
+import { clearAllCookies } from "../utils/cookie";
 import "./index.scss";
 const { Header } = Layout;
+const { Text } = Typography;
 
 interface HeaderProps {
   collapsed: boolean;
@@ -23,10 +42,160 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   const { token } = theme.useToken();
   const [mounted, setMounted] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Get user data from Redux
+  const userProfile = useSelector(
+    (state: RootState) => state.auth?.userProfile
+  );
+  const username = userProfile?.username || "hoangnvse170117";
+  const email = `${username}@fpt.edu.vn`;
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    clearAllCookies();
+    navigate("/login");
+  };
+
+  // Generate avatar color based on username
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      "#722ed1", // Purple
+      "#1890ff", // Blue
+      "#52c41a", // Green
+      "#fa8c16", // Orange
+      "#eb2f96", // Pink
+    ];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  // Dropdown menu items
+  const menuItems: MenuProps["items"] = [
+    {
+      key: "user-info",
+      label: (
+        <div className="user-info-header">
+          <Avatar
+            size={40}
+            style={{
+              backgroundColor: getAvatarColor(username),
+              flexShrink: 0,
+            }}
+          >
+            {username.charAt(0).toUpperCase()}
+          </Avatar>
+          <div className="user-info-text">
+            <Text strong className="user-username">
+              {username}
+            </Text>
+            <Text type="secondary" className="user-email">
+              {email}
+            </Text>
+          </div>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
+      type: "divider",
+    },
+    {
+      key: "view-profile",
+      icon: <UserOutlined />,
+      label: "View Profile",
+      onClick: () => {
+        // Navigate to profile page based on role
+        if (userProfile?.roleCode === "R4") {
+          navigate("/student-portal/profile");
+        } else {
+          navigate("/admin/students");
+        }
+      },
+    },
+    {
+      key: "edit-profile",
+      icon: <EditOutlined />,
+      label: "Edit Profile",
+      onClick: () => {
+        if (userProfile?.roleCode === "R4") {
+          navigate("/student-portal/profile");
+        }
+      },
+    },
+    {
+      key: "manage-account",
+      icon: <SettingOutlined />,
+      label: "Manage Account",
+      onClick: () => {
+        navigate("/admin/security");
+      },
+    },
+    {
+      key: "manage-subscription",
+      icon: <RightOutlined style={{ transform: "rotate(-90deg)" }} />,
+      label: "Manage Subscription",
+      onClick: () => {
+        // Handle subscription management
+      },
+    },
+    {
+      key: "theme",
+      icon: <GlobalOutlined />,
+      label: (
+        <div className="theme-menu-item">
+          <span>Theme</span>
+          <RightOutlined className="theme-arrow" />
+        </div>
+      ),
+      children: [
+        {
+          key: "light",
+          label: "Light",
+        },
+        {
+          key: "dark",
+          label: "Dark",
+        },
+        {
+          key: "auto",
+          label: "Auto",
+        },
+      ],
+    },
+    {
+      type: "divider",
+    },
+    {
+      key: "sign-out",
+      icon: <LogoutOutlined />,
+      label: "Sign Out",
+      danger: true,
+      onClick: handleLogout,
+    },
+    {
+      type: "divider",
+    },
+    {
+      key: "footer",
+      label: (
+        <div className="dropdown-footer">
+          <Text type="secondary" className="footer-link">
+            Terms of Service
+          </Text>
+          <Text type="secondary" className="footer-link">
+            Privacy
+          </Text>
+        </div>
+      ),
+      disabled: true,
+    },
+  ];
 
   // Prevent SSR/Client mismatch by returning simplified header during server render
   if (!mounted) {
@@ -115,6 +284,27 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             className="icon-button"
           />
         </Tooltip>
+
+        <Dropdown
+          menu={{ items: menuItems }}
+          trigger={["click"]}
+          placement="bottomRight"
+          overlayClassName="user-profile-dropdown"
+        >
+          <div className="user-profile-trigger">
+            <Avatar
+              size={32}
+              style={{
+                backgroundColor: getAvatarColor(username),
+                flexShrink: 0,
+              }}
+            >
+              {username.charAt(0).toUpperCase()}
+            </Avatar>
+            <Text className="user-profile-username">{username}</Text>
+            <RightOutlined className="user-profile-chevron" />
+          </div>
+        </Dropdown>
       </div>
     </Header>
   );
