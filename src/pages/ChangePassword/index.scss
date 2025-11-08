@@ -1,0 +1,69 @@
+@use "../../styles/variables" as *;
+
+.change-password-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f0f2f5;
+}
+
+.change-password-card {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  .ant-card-body {
+    padding: 2rem;
+  }
+}
+
+.change-password-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    margin-bottom: 0.5rem;
+    color: $primary-color;
+  }
+}
+
+.change-password-form {
+  .ant-form-item-label > label {
+    font-weight: 500;
+  }
+
+  .change-password-button {
+    height: 45px;
+    font-size: 16px;
+    font-weight: 500;
+    margin-top: 1rem;
+  }
+}
+
+.password-strength-indicator {
+  margin-top: -16px;
+  margin-bottom: 16px;
+
+  .password-strength-bar {
+    height: 4px;
+    border-radius: 2px;
+    margin-bottom: 4px;
+    transition: all 0.3s;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .change-password-container {
+    padding: 1rem;
+  }
+
+  .change-password-card {
+    .ant-card-body {
+      padding: 1.5rem;
+    }
+  }
+}

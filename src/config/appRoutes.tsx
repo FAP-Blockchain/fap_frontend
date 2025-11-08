@@ -34,6 +34,8 @@ import RolesManagement from "../pages/admin/roles";
 import SecurityManagement from "../pages/admin/security";
 import StudentsManagement from "../pages/admin/students";
 import TeachersManagement from "../pages/admin/teachers";
+import RegisterUser from "../pages/admin/registerUser";
+import BulkRegister from "../pages/admin/bulkRegister";
 import AboutHelp from "../pages/PublicPortal/AboutHelp";
 import PublicHome from "../pages/PublicPortal/Home";
 import VerificationHistory from "../pages/PublicPortal/VerificationHistory";
@@ -187,6 +189,26 @@ export const adminRoutes: RouteConfig = {
       path: "/admin/quan-ly-san-pham",
       element: <ManagerProduct />,
       showInMenu: false,
+    },
+    {
+      path: "/admin/users/register",
+      element: <RegisterUser />,
+      menuLabel: "Register User",
+      menuIcon: <UserOutlined />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.ADMIN],
+      menuIndex: 5,
+      menuSection: "main",
+    },
+    {
+      path: "/admin/users/bulk-register",
+      element: <BulkRegister />,
+      menuLabel: "Bulk Register",
+      menuIcon: <TeamOutlined />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.ADMIN],
+      menuIndex: 6,
+      menuSection: "main",
     },
   ],
 };

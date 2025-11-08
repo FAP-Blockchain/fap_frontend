@@ -103,6 +103,16 @@
   justify-content: space-between;
   align-items: center;
   color: $text-color;
+
+  .forgot-password-link {
+    color: $primary-color;
+    text-decoration: none;
+    font-size: 14px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .login-checkbox {

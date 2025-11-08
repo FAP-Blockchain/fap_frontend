@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button, Checkbox, Form, Input, Typography } from "antd";
 import { useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import "./index.scss";
@@ -166,6 +166,9 @@ const Login: React.FC = () => {
                   I agree to the Terms & Privacy
                 </Checkbox>
               </Form.Item>
+              <Link to="/forgot-password" className="forgot-password-link">
+                Forgot Password?
+              </Link>
             </div>
 
             <Form.Item>

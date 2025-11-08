@@ -1,0 +1,22 @@
+@use "../../../styles/variables" as *;
+
+.register-user-container {
+  padding: 24px;
+
+  .ant-card {
+    border-radius: 8px;
+  }
+}
+
+.register-user-header {
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    color: $primary-color;
+  }
+}
+
+.register-user-form {
+  max-width: 800px;
+}

@@ -9,6 +9,7 @@ import {
   LogoutOutlined,
   GlobalOutlined,
   RightOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 import {
   Button,
@@ -180,6 +181,12 @@ const HeaderComponent: React.FC<HeaderProps> = ({
           label: "Auto",
         },
       ],
+    },
+    {
+      key: "change-password",
+      icon: <LockOutlined />,
+      label: "Change Password",
+      onClick: () => navigate("/change-password"),
     },
     {
       type: "divider",
