@@ -80,21 +80,24 @@ const Login: React.FC = () => {
       toast.success("Login successful!");
       setIsNavigating(true);
 
-      // Redirect based on role
-      if (roleCode === ROLE_CODES.ADMIN) {
-        navigate("/admin");
-      } else if (roleCode === ROLE_CODES.TEACHER) {
-        navigate("/teacher");
-      } else if (roleCode === ROLE_CODES.STUDENT) {
-        navigate("/student-portal");
-      } else {
-        navigate("/");
-      }
-
+      // Small delay to ensure Redux state is updated before redirect
       setTimeout(() => {
-        setIsLoading(false);
-        setIsNavigating(false);
-      }, 500);
+        // Redirect based on role
+        if (roleCode === ROLE_CODES.ADMIN) {
+          navigate("/admin", { replace: true });
+        } else if (roleCode === ROLE_CODES.TEACHER) {
+          navigate("/teacher", { replace: true });
+        } else if (roleCode === ROLE_CODES.STUDENT) {
+          navigate("/student-portal", { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
+
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsNavigating(false);
+        }, 300);
+      }, 100);
     } catch (error: any) {
       console.error("Login error:", error);
 
