@@ -15,6 +15,7 @@ export const ROUTES = {
     STUDENTS: "/admin/students",
     TEACHERS: "/admin/teachers",
     CLASSES: "/admin/classes",
+    SEMESTERS: "/admin/semesters",
     ROLES: "/admin/roles",
     CREDENTIALS: "/admin/credentials",
     REPORTS: "/admin/reports",

@@ -37,6 +37,7 @@ import StudentsManagement from "../pages/admin/students";
 import TeachersManagement from "../pages/admin/teachers";
 import RegisterUser from "../pages/admin/registerUser";
 import BulkRegister from "../pages/admin/bulkRegister";
+import SemestersManagement from "../pages/admin/semesters";
 import AboutHelp from "../pages/PublicPortal/AboutHelp";
 import PublicHome from "../pages/PublicPortal/Home";
 import VerificationHistory from "../pages/PublicPortal/VerificationHistory";
@@ -135,13 +136,23 @@ export const adminRoutes: RouteConfig = {
       menuSection: "main",
     },
     {
+      path: "/admin/semesters",
+      element: <SemestersManagement />,
+      menuLabel: "Quản lý Học kì",
+      menuIcon: <CalendarOutlined />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.ADMIN, ROLE_CODES.MANAGER],
+      menuIndex: 4,
+      menuSection: "main",
+    },
+    {
       path: "/admin/roles",
       element: <RolesManagement />,
       menuLabel: "Quản lý Vai trò",
       menuIcon: <SecurityScanOutlined />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.ADMIN], // Only admin
-      menuIndex: 4,
+      menuIndex: 5,
       menuSection: "main",
     },
     {
@@ -198,7 +209,7 @@ export const adminRoutes: RouteConfig = {
       menuIcon: <UserOutlined />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.ADMIN],
-      menuIndex: 5,
+      menuIndex: 6,
       menuSection: "main",
     },
     {
@@ -208,7 +219,7 @@ export const adminRoutes: RouteConfig = {
       menuIcon: <TeamOutlined />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.ADMIN],
-      menuIndex: 6,
+      menuIndex: 7,
       menuSection: "main",
     },
   ],
