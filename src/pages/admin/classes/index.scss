@@ -8,17 +8,13 @@
     border-radius: 12px;
     border: 1px solid #e4e9f2;
     box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
-    flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 
     .ant-card-body {
-      flex: 1;
       display: flex;
       flex-direction: column;
       padding: 14px 18px;
-      overflow: hidden;
     }
   }
 
@@ -254,34 +250,9 @@
   }
 
   .table-section {
-    flex: 1;
     display: flex;
     flex-direction: column;
     margin-top: 8px;
-
-    .ant-table-wrapper {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .ant-table {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .ant-table-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .ant-table-body {
-      flex: 1;
-      overflow-y: auto !important;
-    }
 
     .ant-table-thead > tr > th {
       background: #f8fafc;
