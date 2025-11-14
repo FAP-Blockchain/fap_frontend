@@ -1,0 +1,178 @@
+@use "../../../styles/variables" as *;
+
+.course-registration-page {
+  padding-bottom: 32px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 60%);
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+
+    .ant-typography {
+      margin-bottom: 8px;
+    }
+  }
+
+  .hero-card {
+    border-radius: 16px;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba($primary-color, 0.2);
+    background: linear-gradient(120deg, #1a94fc, #0d73c9 70%);
+    color: #fff;
+
+    .hero-eyebrow {
+      color: rgba(#fff, 0.85);
+      letter-spacing: 0.08em;
+    }
+
+    .hero-stat {
+      min-width: 160px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: rgba(#fff, 0.12);
+      border: 1px solid rgba(#fff, 0.2);
+
+      .ant-typography {
+        color: #fff;
+      }
+    }
+
+    .hero-panel {
+      border-radius: 14px;
+      padding: 20px;
+      background: rgba(#fff, 0.16);
+      border: 1px solid rgba(#fff, 0.2);
+
+      .panel-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+
+        svg {
+          font-size: 24px;
+          color: #fff;
+        }
+
+        .ant-typography {
+          color: #fff;
+          &.ant-typography-secondary {
+            color: rgba(#fff, 0.85);
+          }
+        }
+      }
+    }
+
+    .hero-paragraph {
+      color: rgba(#fff, 0.85);
+      margin-bottom: 0;
+    }
+
+    .ant-segmented {
+      background: rgba(#fff, 0.2);
+      border: 1px solid rgba(#fff, 0.25);
+
+      .ant-segmented-item-label {
+        color: #fff;
+      }
+
+      .ant-segmented-item-selected {
+        .ant-segmented-item-label {
+          color: #1a94fc;
+        }
+      }
+    }
+  }
+
+  .course-list-card,
+  .class-list-card {
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+  }
+
+  .course-card {
+    border: 1px solid rgba($primary-color, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: linear-gradient(160deg, #ffffff, #f0f7ff);
+
+    &:hover {
+      border-color: rgba($primary-color, 0.6);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba($primary-color, 0.15);
+    }
+
+    &.active {
+      border-color: $primary-color;
+      box-shadow: 0 10px 24px rgba($primary-color, 0.25);
+      background: linear-gradient(150deg, rgba($primary-color, 0.15), #ffffff);
+    }
+
+    .course-card__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .course-code {
+      font-weight: 700;
+      color: $primary-color;
+    }
+  }
+
+  .class-card {
+    border-radius: 12px;
+    border: 1px solid rgba($primary-color, 0.1);
+    background: #ffffff;
+    box-shadow: 0 20px 35px rgba(20, 68, 106, 0.08);
+
+    .class-card__header {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .schedule-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+
+      svg {
+        color: $primary-color;
+      }
+
+      .ant-typography {
+        margin: 0;
+      }
+    }
+
+    .ant-progress-line {
+      .ant-progress-bg {
+        background-color: $primary-color;
+      }
+    }
+  }
+
+  .tips-card {
+    margin-top: 32px;
+    border-radius: 14px;
+    background: linear-gradient(120deg, rgba($primary-color, 0.08), #fff);
+    border: 1px solid rgba($primary-color, 0.1);
+    box-shadow: 0 12px 26px rgba($primary-color, 0.12);
+
+    .tip-item {
+      display: flex;
+      gap: 12px;
+
+      svg {
+        font-size: 24px;
+        color: $primary-color;
+      }
+    }
+  }
+}

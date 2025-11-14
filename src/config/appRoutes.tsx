@@ -45,6 +45,7 @@ import VerificationResults from "../pages/PublicPortal/VerificationResults";
 import ActivityDetail from "../pages/StudentPortal/ActivityDetail";
 import AttendanceReport from "../pages/StudentPortal/AttendanceReport";
 import ClassStudentList from "../pages/StudentPortal/ClassStudentList";
+import CourseRegistration from "../pages/StudentPortal/CourseRegistration";
 import CredentialDetail from "../pages/StudentPortal/CredentialDetail";
 import Dashboard from "../pages/StudentPortal/Dashboard";
 import GradeReport from "../pages/StudentPortal/GradeReport";
@@ -264,13 +265,23 @@ export const studentPortalRoutes: RouteConfig = {
       menuSection: "main",
     },
     {
+      path: "course-registration",
+      element: <CourseRegistration />,
+      menuLabel: "Course Registration",
+      menuIcon: <BookOutlined style={{ color: "rgba(0, 0, 0, 0.5)" }} />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.STUDENT],
+      menuIndex: 8,
+      menuSection: "main",
+    },
+    {
       path: "attendance-report",
       element: <AttendanceReport />,
       menuLabel: "Attendance Report",
       menuIcon: <CheckCircleOutlined style={{ color: "rgba(0, 0, 0, 0.5)" }} />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.STUDENT], // Only students
-      menuIndex: 8,
+      menuIndex: 9,
       menuSection: "main",
     },
     {
@@ -280,7 +291,7 @@ export const studentPortalRoutes: RouteConfig = {
       menuIcon: <RiseOutlined style={{ color: "rgba(0, 0, 0, 0.5)" }} />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.STUDENT], // Only students
-      menuIndex: 9,
+      menuIndex: 10,
       menuSection: "main",
     },
     {
@@ -290,7 +301,7 @@ export const studentPortalRoutes: RouteConfig = {
       menuIcon: <ShareAltOutlined style={{ color: "rgba(0, 0, 0, 0.5)" }} />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.STUDENT], // Only students
-      menuIndex: 10,
+      menuIndex: 11,
       menuSection: "main",
     },
     {
@@ -300,7 +311,7 @@ export const studentPortalRoutes: RouteConfig = {
       menuIcon: <UserOutlined style={{ color: "rgba(0, 0, 0, 0.5)" }} />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.STUDENT], // Only students
-      menuIndex: 11,
+      menuIndex: 12,
       menuSection: "main",
     },
     {
