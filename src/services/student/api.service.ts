@@ -1,5 +1,5 @@
 import api from "../../config/axios";
-import type { Student } from "../../types/Student";
+import type { Student, StudentDetailDto } from "../../types/Student";
 
 class StudentServices {
   /**
@@ -7,8 +7,8 @@ class StudentServices {
    * Endpoint: GET /api/Students/me
    * Requires: Student role
    */
-  static async getCurrentStudentProfile(): Promise<Student> {
-    const response = await api.get<Student>("/Students/me");
+  static async getCurrentStudentProfile(): Promise<StudentDetailDto> {
+    const response = await api.get<StudentDetailDto>("/Students/me");
     return response.data;
   }
 

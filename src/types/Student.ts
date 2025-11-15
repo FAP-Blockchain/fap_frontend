@@ -31,4 +31,44 @@ interface StudentFormData {
   status: 'active' | 'inactive' | 'graduated' | 'suspended';
 }
 
-export type { Student, StudentFormData };
+interface EnrollmentInfo {
+  id: string;
+  classCode: string;
+  subjectName: string;
+  teacherName: string;
+  registeredAt: string;
+  isApproved: boolean;
+}
+
+interface ClassInfo {
+  classId: string;
+  classCode: string;
+  subjectName: string;
+  subjectCode: string;
+  credits: number;
+  teacherName: string;
+  joinedAt: string;
+}
+
+interface StudentDetailDto {
+  id: string;
+  studentCode: string;
+  fullName: string;
+  email: string;
+  enrollmentDate: string;
+  gpa: number;
+  isGraduated: boolean;
+  graduationDate?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  enrollments: EnrollmentInfo[];
+  currentClasses: ClassInfo[];
+  totalEnrollments: number;
+  approvedEnrollments: number;
+  pendingEnrollments: number;
+  totalClasses: number;
+  totalGrades: number;
+  totalAttendances: number;
+}
+
+export type { Student, StudentFormData, StudentDetailDto, EnrollmentInfo, ClassInfo };

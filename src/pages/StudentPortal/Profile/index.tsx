@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Row,
@@ -7,103 +7,77 @@ import {
   Form,
   Input,
   Button,
-  Upload,
   Avatar,
-  Switch,
   DatePicker,
   Divider,
   message,
   Modal,
-  List,
   Tag,
-  Badge,
   Descriptions,
-  Alert,
   Space,
+  Spin,
 } from "antd";
 import {
   UserOutlined,
   EditOutlined,
   SaveOutlined,
-  CameraOutlined,
-  SafetyCertificateOutlined,
-  BellOutlined,
-  LogoutOutlined,
-  PhoneOutlined,
   MailOutlined,
   EnvironmentOutlined,
   IdcardOutlined,
-  DeleteOutlined,
   LockOutlined,
-  SettingOutlined,
+  PhoneOutlined,
 } from "@ant-design/icons";
-import type { UploadProps } from "antd";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import StudentServices from "../../../services/student/api.service";
+import type { StudentDetailDto } from "../../../types/Student";
 import "./Profile.scss";
 
 dayjs.extend(relativeTime);
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const Profile: React.FC = () => {
   const [personalForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [studentData, setStudentData] = useState<StudentDetailDto | null>(null);
 
-  // Mock user data
-  const userData = {
-    fullName: "Nghiêm Văn Hoàng",
-    studentId: "SE171234",
-    email: "hoang.nguyen@student.fpt.edu.vn",
-    phone: "+84 123 456 789",
-    dateOfBirth: "2000-03-15",
-    address: "123 Lê Văn Việt, Quận 9, TP.HCM",
-    major: "Software Engineering",
-    year: "4th Year",
-    gpa: "3.85",
-    joinDate: "2021-09-01",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Hoang",
+  // Avatar từ public folder
+  const tempAvatar = "/image/avatarEx.jpg";
+
+  useEffect(() => {
+    fetchStudentProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchStudentProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await StudentServices.getCurrentStudentProfile();
+      setStudentData(data);
+
+      // Set form values với dữ liệu từ API
+      personalForm.setFieldsValue({
+        fullName: data.fullName,
+        email: data.email,
+      });
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to load student profile";
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    credentialUpdates: true,
-    securityAlerts: true,
-    marketingEmails: false,
-  });
-
-  const loginSessions = [
-    {
-      id: "session_1",
-      device: "Chrome on Windows 10",
-      location: "Ho Chi Minh City, Vietnam",
-      ip: "192.168.1.100",
-      lastActive: "2024-09-12T14:30:00Z",
-      isCurrent: true,
-    },
-    {
-      id: "session_2",
-      device: "Mobile App on iPhone",
-      location: "Ho Chi Minh City, Vietnam",
-      ip: "192.168.1.101",
-      lastActive: "2024-09-12T08:15:00Z",
-      isCurrent: false,
-    },
-    {
-      id: "session_3",
-      device: "Safari on MacBook",
-      location: "Da Nang, Vietnam",
-      ip: "192.168.2.50",
-      lastActive: "2024-09-11T22:45:00Z",
-      isCurrent: false,
-    },
-  ];
 
   const handlePersonalInfoSave = async (values: Record<string, string>) => {
     try {
@@ -126,56 +100,32 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleNotificationChange = (key: string, value: boolean) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    message.success(`${key} ${value ? "enabled" : "disabled"}`);
-  };
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "400px",
+          }}
+        >
+          <Spin size="large" />
+        </div>
+      </div>
+    );
+  }
 
-  const handleLogoutSession = () => {
-    Modal.confirm({
-      title: "End Session",
-      content: "Are you sure you want to end this session?",
-      okText: "End Session",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk() {
-        message.success("Session ended successfully");
-      },
-    });
-  };
-
-  const handleDeleteAccount = () => {
-    setShowDeleteModal(true);
-  };
-
-  const uploadProps: UploadProps = {
-    name: "avatar",
-    listType: "picture-card",
-    showUploadList: false,
-    beforeUpload: (file) => {
-      const isImage = file.type.startsWith("image/");
-      if (!isImage) {
-        message.error("You can only upload image files!");
-        return false;
-      }
-      const isLt2M = file.size / 1024 / 1024 < 2;
-      if (!isLt2M) {
-        message.error("Image must be smaller than 2MB!");
-        return false;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
-        message.success("Profile picture updated!");
-      };
-      reader.readAsDataURL(file);
-      return false;
-    },
-  };
+  if (!studentData) {
+    return (
+      <div className="profile-page">
+        <Card>
+          <Text>No student data available</Text>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="profile-page">
@@ -198,23 +148,19 @@ const Profile: React.FC = () => {
           <Card className="profile-overview-card">
             <div className="profile-header">
               <div className="avatar-section">
-                <Badge count={<CameraOutlined />} offset={[-10, 35]}>
-                  <Upload {...uploadProps}>
-                    <Avatar
-                      size={100}
-                      src={profileImage || userData.avatar}
-                      icon={<UserOutlined />}
-                      className="profile-avatar"
-                    />
-                  </Upload>
-                </Badge>
+                <Avatar
+                  size={100}
+                  src={tempAvatar}
+                  icon={<UserOutlined />}
+                  className="profile-avatar"
+                />
               </div>
               <div className="profile-info">
                 <Title
                   level={3}
                   style={{ margin: "16px 0 4px", textAlign: "center" }}
                 >
-                  {userData.fullName}
+                  {studentData.fullName}
                 </Title>
                 <Text
                   type="secondary"
@@ -224,11 +170,13 @@ const Profile: React.FC = () => {
                     marginBottom: 8,
                   }}
                 >
-                  {userData.studentId}
+                  {studentData.studentCode}
                 </Text>
                 <div style={{ textAlign: "center" }}>
-                  <Tag color="blue">{userData.major}</Tag>
-                  <Tag color="green">{userData.year}</Tag>
+                  <Tag color={studentData.isActive ? "green" : "red"}>
+                    {studentData.isActive ? "Active" : "Inactive"}
+                  </Tag>
+                  {studentData.isGraduated && <Tag color="blue">Graduated</Tag>}
                 </div>
               </div>
             </div>
@@ -237,16 +185,16 @@ const Profile: React.FC = () => {
 
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Email">
-                <Text copyable>{userData.email}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Phone">
-                <Text copyable>{userData.phone}</Text>
+                <Text copyable>{studentData.email}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="GPA">
-                <Tag color="gold">{userData.gpa}</Tag>
+                <Tag color="gold">{studentData.gpa.toFixed(2)}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Joined">
-                {dayjs(userData.joinDate).format("MMMM YYYY")}
+              <Descriptions.Item label="Enrollment Date">
+                {dayjs(studentData.enrollmentDate).format("MMMM YYYY")}
+              </Descriptions.Item>
+              <Descriptions.Item label="Total Classes">
+                <Tag color="blue">{studentData.totalClasses}</Tag>
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -260,7 +208,7 @@ const Profile: React.FC = () => {
               <Card
                 title={
                   <Space>
-                    <IdcardOutlined style={{ color: "#1890ff" }} />
+                    <IdcardOutlined style={{ color: "#1a94fc" }} />
                     <span>Personal Information</span>
                   </Space>
                 }
@@ -285,11 +233,8 @@ const Profile: React.FC = () => {
                   layout="vertical"
                   onFinish={handlePersonalInfoSave}
                   initialValues={{
-                    fullName: userData.fullName,
-                    email: userData.email,
-                    phone: userData.phone,
-                    dateOfBirth: dayjs(userData.dateOfBirth),
-                    address: userData.address,
+                    fullName: studentData.fullName,
+                    email: studentData.email,
                   }}
                 >
                   <Row gutter={[16, 0]}>
@@ -338,221 +283,39 @@ const Profile: React.FC = () => {
               </Card>
             </Col>
 
-            {/* Security Settings */}
+            {/* Change Password */}
             <Col xs={24}>
               <Card
                 title={
                   <Space>
-                    <SafetyCertificateOutlined style={{ color: "#52c41a" }} />
-                    <span>Security Settings</span>
+                    <LockOutlined style={{ color: "#1a94fc" }} />
+                    <span>Change Password</span>
                   </Space>
                 }
               >
-                <Row gutter={[0, 16]}>
-                  <Col xs={24}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "12px 0",
-                      }}
-                    >
-                      <div>
-                        <Text strong>Password</Text>
-                        <br />
-                        <Text type="secondary">Last changed 3 months ago</Text>
-                      </div>
-                      <Button
-                        icon={<LockOutlined />}
-                        onClick={() => setShowPasswordModal(true)}
-                      >
-                        Change Password
-                      </Button>
-                    </div>
-                  </Col>
-
-                  <Col xs={24}>
-                    <Divider style={{ margin: "12px 0" }} />
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "12px 0",
-                      }}
-                    >
-                      <div>
-                        <Text strong>Two-Factor Authentication</Text>
-                        <br />
-                        <Text type="secondary">
-                          Add an extra layer of security
-                        </Text>
-                      </div>
-                      <Switch
-                        defaultChecked
-                        onChange={(checked) =>
-                          message.success(
-                            `2FA ${checked ? "enabled" : "disabled"}`
-                          )
-                        }
-                      />
-                    </div>
-                  </Col>
-
-                  <Col xs={24}>
-                    <Divider style={{ margin: "12px 0" }} />
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 16,
-                      }}
-                    >
-                      <Text strong>Active Sessions</Text>
-                      <Text type="secondary">
-                        {loginSessions.length} active sessions
-                      </Text>
-                    </div>
-
-                    <List
-                      dataSource={loginSessions}
-                      renderItem={(session) => (
-                        <List.Item
-                          actions={[
-                            session.isCurrent ? (
-                              <Tag color="green">Current</Tag>
-                            ) : (
-                              <Button
-                                type="text"
-                                danger
-                                icon={<LogoutOutlined />}
-                                onClick={handleLogoutSession}
-                              >
-                                End Session
-                              </Button>
-                            ),
-                          ]}
-                        >
-                          <List.Item.Meta
-                            avatar={
-                              <Avatar
-                                icon={
-                                  session.isCurrent ? (
-                                    <UserOutlined />
-                                  ) : (
-                                    <PhoneOutlined />
-                                  )
-                                }
-                              />
-                            }
-                            title={session.device}
-                            description={
-                              <div>
-                                <Text type="secondary">
-                                  {session.location} • {session.ip}
-                                </Text>
-                                <br />
-                                <Text type="secondary">
-                                  Last active:{" "}
-                                  {dayjs(session.lastActive).fromNow()}
-                                </Text>
-                              </div>
-                            }
-                          />
-                        </List.Item>
-                      )}
-                    />
-                  </Col>
-                </Row>
-              </Card>
-            </Col>
-
-            {/* Notification Settings */}
-            <Col xs={24}>
-              <Card
-                title={
-                  <Space>
-                    <BellOutlined style={{ color: "#722ed1" }} />
-                    <span>Notification Preferences</span>
-                  </Space>
-                }
-              >
-                <Row gutter={[0, 16]}>
-                  {Object.entries(notifications).map(([key, value]) => (
-                    <Col xs={24} key={key}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "8px 0",
-                        }}
-                      >
-                        <div>
-                          <Text strong>
-                            {key
-                              .replace(/([A-Z])/g, " $1")
-                              .replace(/^./, (str) => str.toUpperCase())}
-                          </Text>
-                          <br />
-                          <Text type="secondary">
-                            {key === "emailNotifications" &&
-                              "Receive updates via email"}
-                            {key === "smsNotifications" &&
-                              "Get SMS alerts for important updates"}
-                            {key === "pushNotifications" &&
-                              "Browser push notifications"}
-                            {key === "credentialUpdates" &&
-                              "New credentials and status changes"}
-                            {key === "securityAlerts" &&
-                              "Login attempts and security issues"}
-                            {key === "marketingEmails" &&
-                              "Product updates and newsletters"}
-                          </Text>
-                        </div>
-                        <Switch
-                          checked={value}
-                          onChange={(checked) =>
-                            handleNotificationChange(key, checked)
-                          }
-                        />
-                      </div>
-                      {key !== "marketingEmails" && (
-                        <Divider style={{ margin: "8px 0" }} />
-                      )}
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
-            </Col>
-
-            {/* Account Management */}
-            <Col xs={24}>
-              <Card
-                title={
-                  <Space>
-                    <SettingOutlined style={{ color: "#fa541c" }} />
-                    <span>Account Management</span>
-                  </Space>
-                }
-              >
-                <Alert
-                  message="Danger Zone"
-                  description="These actions are permanent and cannot be undone."
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
-
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={handleDeleteAccount}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 0",
+                  }}
                 >
-                  Delete Account
-                </Button>
+                  <div>
+                    <Text strong>Password</Text>
+                    <br />
+                    <Text type="secondary">
+                      Update your password to keep your account secure
+                    </Text>
+                  </div>
+                  <Button
+                    type="primary"
+                    icon={<LockOutlined />}
+                    onClick={() => setShowPasswordModal(true)}
+                  >
+                    Change Password
+                  </Button>
+                </div>
               </Card>
             </Col>
           </Row>
@@ -625,42 +388,6 @@ const Profile: React.FC = () => {
             <Input.Password placeholder="Confirm new password" />
           </Form.Item>
         </Form>
-      </Modal>
-
-      {/* Delete Account Modal */}
-      <Modal
-        title="Delete Account"
-        open={showDeleteModal}
-        onCancel={() => setShowDeleteModal(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="delete"
-            type="primary"
-            danger
-            onClick={() => {
-              message.success("Account deletion request submitted");
-              setShowDeleteModal(false);
-            }}
-          >
-            Delete Account
-          </Button>,
-        ]}
-      >
-        <Alert
-          message="This action cannot be undone!"
-          description="Deleting your account will permanently remove all your data, credentials, and access to the platform."
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-        <Paragraph>
-          If you're sure you want to delete your account, please type your email
-          address to confirm:
-        </Paragraph>
-        <Input placeholder="Enter your email address" />
       </Modal>
     </div>
   );

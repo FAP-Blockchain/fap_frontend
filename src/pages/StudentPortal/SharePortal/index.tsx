@@ -35,7 +35,7 @@ const SharePortal: React.FC = () => {
                 size={120}
                 style={{
                   backgroundColor: "#f0f5ff",
-                  color: "#1890ff",
+                  color: "#1a94fc",
                   marginBottom: 16,
                 }}
               >
@@ -45,7 +45,7 @@ const SharePortal: React.FC = () => {
               <div>
                 <Title
                   level={2}
-                  style={{ color: "#1890ff", margin: "16px 0 8px" }}
+                  style={{ color: "#1a94fc", margin: "16px 0 8px" }}
                 >
                   🚧 Coming Soon
                 </Title>
@@ -83,7 +83,7 @@ const SharePortal: React.FC = () => {
                     <LinkOutlined
                       style={{
                         fontSize: 32,
-                        color: "#1890ff",
+                        color: "#1a94fc",
                         marginBottom: 16,
                       }}
                     />
