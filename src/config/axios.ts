@@ -1,9 +1,12 @@
 import axios, { AxiosError } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 
+=======
+import type { RefreshTokenResponse } from "../types/Auth";
+
 import { logout } from "../redux/features/authSlice";
 import { store } from "../redux/store";
-import type { RefreshTokenResponse } from "../Types/Auth";
+
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
