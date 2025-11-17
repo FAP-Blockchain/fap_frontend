@@ -1,13 +1,15 @@
 import axios, { AxiosError } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
-import type { RefreshTokenResponse } from "../Types/Auth";
+
 import { logout } from "../redux/features/authSlice";
 import { store } from "../redux/store";
+import type { RefreshTokenResponse } from "../Types/Auth";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL ||
-    "http://localhost:8080/api",
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -52,7 +54,7 @@ api.interceptors.response.use(
 
         // Call refresh token API
         const response = await axios.post<RefreshTokenResponse>(
-          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api"}/Auth/refresh-token`,
+          `${API_BASE_URL}/Auth/refresh-token`,
           { refreshToken }
         );
 
