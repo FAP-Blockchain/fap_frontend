@@ -18,6 +18,8 @@ import {
   BookOutlined,
   CalendarOutlined,
   TeamOutlined,
+  UsergroupAddOutlined,
+  InboxOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import {
@@ -358,11 +360,23 @@ const ClassDetail: React.FC = () => {
           >
             {classInfo.currentEnrollment} sinh viên
           </Descriptions.Item>
-          <Descriptions.Item label="Đăng ký">
-            {classInfo.totalEnrollments} lượt
+          <Descriptions.Item
+            label={
+              <span>
+                <UsergroupAddOutlined /> Số học sinh tối đa
+              </span>
+            }
+          >
+            {classInfo.maxEnrollment} lượt
           </Descriptions.Item>
-          <Descriptions.Item label="Chỗ trống">
-            {classInfo.totalSlots} chỗ
+          <Descriptions.Item
+            label={
+              <span>
+                <InboxOutlined /> Chỗ trống
+              </span>
+            }
+          >
+            {classInfo.maxEnrollment - classInfo.currentEnrollment} chỗ
           </Descriptions.Item>
         </Descriptions>
       </Card>
