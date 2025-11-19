@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -9,6 +10,7 @@ import {
   Row,
   Select,
   Space,
+  Spin,
   Table,
   Tag,
   Tooltip,
@@ -24,6 +26,11 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear";
+import StudentServices from "../../../services/student/api.service";
+import type {
+  WeeklyScheduleDto,
+  ScheduleItemDto,
+} from "../../../types/Schedule";
 import "./WeeklyTimetable.scss";
 
 dayjs.extend(weekOfYear);
@@ -31,9 +38,19 @@ dayjs.extend(weekOfYear);
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+type DayKey =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
 interface TimetableSlot {
-  slot: number;
+  slotIndex: number;
   time: string;
+  label: string;
   monday?: ClassInfo;
   tuesday?: ClassInfo;
   wednesday?: ClassInfo;
@@ -46,81 +63,113 @@ interface TimetableSlot {
 interface ClassInfo {
   courseCode: string;
   courseName: string;
-  instructor: string;
-  room: string;
-  building: string;
+  instructor?: string;
+  location?: string;
   attendance?: "attended" | "absent" | "not_yet";
-  week: string;
+  date: string;
+  classId?: string;
+  slotId?: string;
+  status?: string;
+  startTime?: string;
+  endTime?: string;
+  rawSlot?: ScheduleItemDto;
 }
+
+const dayMappings: Record<
+  string,
+  { key: DayKey; label: string; shortLabel: string }
+> = {
+  Monday: { key: "monday", label: "Thứ 2", shortLabel: "T2" },
+  Tuesday: { key: "tuesday", label: "Thứ 3", shortLabel: "T3" },
+  Wednesday: { key: "wednesday", label: "Thứ 4", shortLabel: "T4" },
+  Thursday: { key: "thursday", label: "Thứ 5", shortLabel: "T5" },
+  Friday: { key: "friday", label: "Thứ 6", shortLabel: "T6" },
+  Saturday: { key: "saturday", label: "Thứ 7", shortLabel: "T7" },
+  Sunday: { key: "sunday", label: "Chủ nhật", shortLabel: "CN" },
+};
+
+const DEFAULT_TIME_SLOTS: TimetableSlot[] = [
+  { slotIndex: 1, time: "07:30 - 09:20", label: "Ca 1" },
+  { slotIndex: 2, time: "09:30 - 11:20", label: "Ca 2" },
+  { slotIndex: 3, time: "12:30 - 14:20", label: "Ca 3" },
+  { slotIndex: 4, time: "14:30 - 16:20", label: "Ca 4" },
+];
 
 const WeeklyTimetable: React.FC = () => {
   const navigate = useNavigate();
   const [selectedWeek, setSelectedWeek] = useState(dayjs());
+  const [weeklySchedule, setWeeklySchedule] =
+    useState<WeeklyScheduleDto | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock timetable data for current week
-  const timetableData: TimetableSlot[] = [
-    {
-      slot: 1,
-      time: "07:30 - 09:20",
-      tuesday: {
-        courseCode: "HCM202",
-        courseName: "Ho Chi Minh Ideology",
-        instructor: "Dr. Nguyen Van A",
-        room: "NVH 409",
-        building: "NVH",
-        attendance: "attended",
-        week: "22/09 - 28/09",
-      },
-      thursday: {
-        courseCode: "HCM202",
-        courseName: "Ho Chi Minh Ideology",
-        instructor: "Dr. Nguyen Van A",
-        room: "NVH 409",
-        building: "NVH",
-        attendance: "not_yet",
-        week: "22/09 - 28/09",
-      },
+  const getMondayOfWeek = useCallback((date: dayjs.Dayjs) => {
+    const day = date.day();
+    const diff = day === 0 ? -6 : 1 - day;
+    return date.add(diff, "day").startOf("day");
+  }, []);
+
+  const formatTimeRange = useCallback((start?: string, end?: string) => {
+    if (!start || !end) return "—";
+    const startLabel = dayjs(start).format("HH:mm");
+    const endLabel = dayjs(end).format("HH:mm");
+    return `${startLabel} - ${endLabel}`;
+  }, []);
+
+  const mapAttendance = useCallback(
+    (slot: ScheduleItemDto): ClassInfo["attendance"] => {
+      if (slot.isPresent === true) return "attended";
+      if (slot.isPresent === false) return "absent";
+      if (slot.hasAttendance) return "not_yet";
+      return undefined;
     },
-    {
-      slot: 2,
-      time: "09:30 - 11:20",
+    []
+  );
+
+  const convertSlotToClassInfo = useCallback(
+    (slot: ScheduleItemDto): ClassInfo => ({
+      courseCode: slot.subjectCode || slot.classCode,
+      courseName: slot.subjectName || slot.classCode,
+      instructor: slot.teacherName,
+      location: slot.notes || slot.classCode,
+      attendance: mapAttendance(slot),
+      date: slot.date,
+      classId: slot.classId,
+      slotId: slot.slotId,
+      status: slot.status,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      rawSlot: slot,
+    }),
+    [mapAttendance]
+  );
+
+  const fetchWeeklySchedule = useCallback(
+    async (week: dayjs.Dayjs) => {
+      const monday = getMondayOfWeek(week);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await StudentServices.getMyWeeklySchedule(
+          monday.toISOString()
+        );
+        setWeeklySchedule(data);
+      } catch (err) {
+        const message =
+          (err as { message?: string })?.message ||
+          "Không thể tải dữ liệu thời khóa biểu.";
+        setError(message);
+        setWeeklySchedule(null);
+      } finally {
+        setIsLoading(false);
+      }
     },
-    {
-      slot: 3,
-      time: "12:30 - 14:20",
-      tuesday: {
-        courseCode: "MLN131",
-        courseName: "Marxist-Leninist Philosophy",
-        instructor: "Prof. Tran Thi B",
-        room: "NVH 502",
-        building: "NVH",
-        attendance: "attended",
-        week: "22/09 - 28/09",
-      },
-      thursday: {
-        courseCode: "MLN131",
-        courseName: "Marxist-Leninist Philosophy",
-        instructor: "Prof. Tran Thi B",
-        room: "NVH 502",
-        building: "NVH",
-        attendance: "not_yet",
-        week: "22/09 - 28/09",
-      },
-      saturday: {
-        courseCode: "SEP490",
-        courseName: "Capstone Project",
-        instructor: "Mr. Le Van C",
-        room: "P.136",
-        building: "Alpha",
-        attendance: "not_yet",
-        week: "22/09 - 28/09",
-      },
-    },
-    {
-      slot: 4,
-      time: "14:30 - 16:20",
-    },
-  ];
+    [getMondayOfWeek]
+  );
+
+  useEffect(() => {
+    fetchWeeklySchedule(selectedWeek);
+  }, [fetchWeeklySchedule, selectedWeek]);
 
   const getAttendanceTag = (attendance?: string) => {
     switch (attendance) {
@@ -148,175 +197,146 @@ const WeeklyTimetable: React.FC = () => {
   };
 
   const getActivityId = (classInfo: ClassInfo, dayKey: string) => {
-    // Generate a unique ID for the activity based on course code and day
-    return `${classInfo.courseCode.toLowerCase()}_${dayKey}_slot${
-      classInfo.courseCode === "HCM202"
-        ? "2"
-        : classInfo.courseCode === "MLN131"
-        ? "3"
-        : "3"
-    }`;
+    if (classInfo.slotId) return classInfo.slotId;
+    if (classInfo.classId) return classInfo.classId;
+    return `${classInfo.courseCode}_${dayKey}`;
   };
 
-  const renderClassCell = (classInfo?: ClassInfo, dayKey?: string) => {
-    if (!classInfo) {
-      return <div className="empty-slot">-</div>;
-    }
+  const renderClassCell = useCallback(
+    (classInfo?: ClassInfo, dayKey?: string) => {
+      if (!classInfo) {
+        return <div className="empty-slot">-</div>;
+      }
 
-    const handleViewDetails = () => {
-      const activityId = getActivityId(classInfo, dayKey || "tue");
-      navigate(`/student-portal/activity/${activityId}`);
-    };
+      const handleViewDetails = () => {
+        const activityId = getActivityId(classInfo, dayKey || "tue");
+        navigate(`/student-portal/activity/${activityId}`, {
+          state: { slot: classInfo.rawSlot },
+        });
+      };
 
-    return (
-      <div
-        className="class-slot"
-        onClick={handleViewDetails}
-        style={{ cursor: "pointer" }}
-      >
-        <div className="course-code">
-          <Text strong>{classInfo.courseCode}</Text>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="link"
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails();
-              }}
-            >
-              Xem tài liệu
-            </Button>
-          </Tooltip>
+      return (
+        <div
+          className="class-slot"
+          onClick={handleViewDetails}
+          style={{ cursor: "pointer" }}
+        >
+          <div className="course-code">
+            <Text strong>{classInfo.courseCode}</Text>
+            <Tooltip title="Xem chi tiết">
+              <Button
+                type="link"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewDetails();
+                }}
+              >
+                Xem tài liệu
+              </Button>
+            </Tooltip>
+          </div>
+          <div className="course-info">
+            <Text style={{ fontSize: 12 }}>
+              {classInfo.courseName}
+              {classInfo.instructor && ` • ${classInfo.instructor}`}
+            </Text>
+          </div>
+          <div className="attendance-status">
+            {getAttendanceTag(classInfo.attendance)}
+          </div>
+          <div className="time-info">
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {dayjs(classInfo.date).format("DD/MM/YYYY")}
+            </Text>
+          </div>
         </div>
-        <div className="course-info">
-          <Text style={{ fontSize: 12 }}>
-            tại {classInfo.room} - {classInfo.building}
-          </Text>
-        </div>
-        <div className="attendance-status">
-          {getAttendanceTag(classInfo.attendance)}
-        </div>
-        <div className="time-info">
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            ({classInfo.week})
-          </Text>
-        </div>
-      </div>
+      );
+    },
+    [navigate]
+  );
+
+  const timetableData = useMemo(() => {
+    if (!weeklySchedule) return DEFAULT_TIME_SLOTS;
+
+    const slotMap = new Map<string, TimetableSlot>();
+
+    weeklySchedule.days.forEach((day) => {
+      const dayMeta = dayMappings[day.dayOfWeek];
+      if (!dayMeta) return;
+
+      day.slots.forEach((slot) => {
+        const startTimeKey = slot.startTime || slot.timeSlotName || slot.slotId;
+        const key = `${slot.timeSlotId}-${startTimeKey}`;
+
+        if (!slotMap.has(key)) {
+          slotMap.set(key, {
+            slotIndex: slotMap.size + 1,
+            time: formatTimeRange(slot.startTime, slot.endTime),
+            label: slot.timeSlotName || `Ca ${slotMap.size + 1}`,
+          });
+        }
+
+        const row = slotMap.get(key);
+        if (row) {
+          row[dayMeta.key] = convertSlotToClassInfo(slot);
+        }
+      });
+    });
+
+    const rows = Array.from(slotMap.values()).sort((a, b) =>
+      a.time.localeCompare(b.time)
     );
-  };
 
-  const columns: ColumnsType<TimetableSlot> = [
-    {
-      title: "Ca học",
-      dataIndex: "slot",
-      key: "slot",
-      width: 100,
-      render: (slot: number, record: TimetableSlot) => (
-        <div className="time-slot-header">
-          <div className="slot-number">Ca {slot}</div>
-          <div className="slot-time">{record.time}</div>
-        </div>
-      ),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>T2</span>
-          <div className="date-number">22/09</div>
-        </div>
-      ),
-      dataIndex: "monday",
-      key: "monday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "mon"),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>T3</span>
-          <div className="date-number">23/09</div>
-        </div>
-      ),
-      dataIndex: "tuesday",
-      key: "tuesday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "tue"),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>T4</span>
-          <div className="date-number">24/09</div>
-        </div>
-      ),
-      dataIndex: "wednesday",
-      key: "wednesday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "wed"),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>T5</span>
-          <div className="date-number">25/09</div>
-        </div>
-      ),
-      dataIndex: "thursday",
-      key: "thursday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "thu"),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>T6</span>
-          <div className="date-number">26/09</div>
-        </div>
-      ),
-      dataIndex: "friday",
-      key: "friday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "fri"),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>T7</span>
-          <div className="date-number">27/09</div>
-        </div>
-      ),
-      dataIndex: "saturday",
-      key: "saturday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "sat"),
-    },
-    {
-      title: (
-        <div className="day-header">
-          <CalendarOutlined />
-          <span>CN</span>
-          <div className="date-number">28/09</div>
-        </div>
-      ),
-      dataIndex: "sunday",
-      key: "sunday",
-      width: 110,
-      render: (classInfo: ClassInfo) => renderClassCell(classInfo, "sun"),
-    },
-  ];
+    return rows.length > 0 ? rows : DEFAULT_TIME_SLOTS;
+  }, [weeklySchedule, convertSlotToClassInfo, formatTimeRange]);
+
+  const columns: ColumnsType<TimetableSlot> = useMemo(() => {
+    const base: ColumnsType<TimetableSlot> = [
+      {
+        title: "Ca học",
+        dataIndex: "slotIndex",
+        key: "slotIndex",
+        width: 120,
+        render: (_: number, record: TimetableSlot) => (
+          <div className="time-slot-header">
+            <div className="slot-number">{record.label}</div>
+            <div className="slot-time">{record.time}</div>
+          </div>
+        ),
+      },
+    ];
+
+    Object.keys(dayMappings).forEach((dayName) => {
+      const meta = dayMappings[dayName];
+      const dayData = weeklySchedule?.days.find((d) => d.dayOfWeek === dayName);
+
+      base.push({
+        title: (
+          <div className="day-header">
+            <CalendarOutlined />
+            <span>{meta.shortLabel}</span>
+            <div className="date-number">
+              {dayData ? dayjs(dayData.date).format("DD/MM") : "--/--"}
+            </div>
+          </div>
+        ),
+        dataIndex: meta.key,
+        key: meta.key,
+        width: 130,
+        render: (classInfo: ClassInfo) =>
+          renderClassCell(classInfo, meta.shortLabel.toLowerCase()),
+      });
+    });
+
+    return base;
+  }, [weeklySchedule, renderClassCell]);
 
   const handleWeekChange = (direction: "prev" | "next") => {
     if (direction === "prev") {
-      setSelectedWeek(selectedWeek.subtract(1, "week"));
+      setSelectedWeek((prev) => prev.subtract(1, "week"));
     } else {
-      setSelectedWeek(selectedWeek.add(1, "week"));
+      setSelectedWeek((prev) => prev.add(1, "week"));
     }
   };
 
@@ -340,11 +360,13 @@ const WeeklyTimetable: React.FC = () => {
             <Col>
               <div className="week-info">
                 <Title level={4} style={{ margin: 0 }}>
-                  Tuần: {selectedWeek.format("DD/MM")} -{" "}
-                  {selectedWeek.add(6, "day").format("DD/MM/YYYY")}
+                  {weeklySchedule?.weekLabel ||
+                    `Tuần: ${selectedWeek.format("DD/MM")} - ${selectedWeek
+                      .add(6, "day")
+                      .format("DD/MM/YYYY")}`}
                 </Title>
                 <Text type="secondary">
-                  Học kỳ: Fall 2025 • Tuần {selectedWeek.week()}
+                  Tổng số ca: {weeklySchedule?.totalSlots ?? 0}
                 </Text>
               </div>
             </Col>
@@ -360,9 +382,12 @@ const WeeklyTimetable: React.FC = () => {
                   </Button>
                   <div className="date-select-group">
                     <Select
-                      defaultValue="2025"
+                      value={selectedWeek.format("YYYY")}
                       className="year-select"
                       suffixIcon={null}
+                      onChange={(year: string) =>
+                        setSelectedWeek((prev) => prev.year(Number(year)))
+                      }
                     >
                       <Option value="2024">2024</Option>
                       <Option value="2025">2025</Option>
@@ -387,15 +412,28 @@ const WeeklyTimetable: React.FC = () => {
 
       {/* Timetable */}
       <Card className="timetable-card">
-        <Table
-          columns={columns}
-          dataSource={timetableData}
-          rowKey="slot"
-          pagination={false}
-          bordered
-          size="middle"
-          className="timetable-table"
-        />
+        {error && (
+          <Alert
+            type="error"
+            message="Không thể tải thời khóa biểu"
+            description={error}
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
+        <Spin spinning={isLoading}>
+          <Table
+            columns={columns}
+            dataSource={timetableData}
+            rowKey={(record) => `${record.label}-${record.time}`}
+            pagination={false}
+            bordered
+            size="middle"
+            className="timetable-table"
+            scroll={{ x: true }}
+            locale={{ emptyText: null }}
+          />
+        </Spin>
       </Card>
 
       {/* Legend */}
