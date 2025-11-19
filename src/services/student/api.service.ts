@@ -1,4 +1,8 @@
 import api from "../../config/axios";
+import type {
+  WeeklyScheduleDto,
+  WeeklyScheduleResponse,
+} from "../../types/Schedule";
 import type { Student, StudentDetailDto } from "../../types/Student";
 
 class StudentServices {
@@ -20,7 +24,29 @@ class StudentServices {
     const response = await api.get<Student>(`/Students/${id}`);
     return response.data;
   }
+
+  /**
+   * Get current student's weekly schedule
+   * Endpoint: GET /api/students/me/schedule
+   */
+  static async getMyWeeklySchedule(
+    weekStartDate?: string
+  ): Promise<WeeklyScheduleDto> {
+    const response = await api.get<WeeklyScheduleResponse>(
+      "/students/me/schedule",
+      {
+        params: weekStartDate ? { weekStartDate } : undefined,
+      }
+    );
+
+    if (!response.data.success) {
+      throw new Error(
+        response.data.message || "Không thể lấy thời khóa biểu tuần."
+      );
+    }
+
+    return response.data.data;
+  }
 }
 
 export default StudentServices;
-

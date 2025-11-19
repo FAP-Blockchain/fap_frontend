@@ -63,7 +63,7 @@ const Profile: React.FC = () => {
       personalForm.setFieldsValue({
         fullName: data.fullName,
         email: data.email,
-      });
+  });
     } catch (error: unknown) {
       const err = error as {
         response?: { data?: { message?: string } };
@@ -148,12 +148,12 @@ const Profile: React.FC = () => {
           <Card className="profile-overview-card">
             <div className="profile-header">
               <div className="avatar-section">
-                <Avatar
-                  size={100}
+                    <Avatar
+                      size={100}
                   src={tempAvatar}
-                  icon={<UserOutlined />}
-                  className="profile-avatar"
-                />
+                      icon={<UserOutlined />}
+                      className="profile-avatar"
+                    />
               </div>
               <div className="profile-info">
                 <Title
@@ -295,29 +295,29 @@ const Profile: React.FC = () => {
                   </Space>
                 }
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 0",
-                  }}
-                >
-                  <div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px 0",
+                      }}
+                    >
+                      <div>
                     <Text strong>Mật khẩu</Text>
-                    <br />
+                        <br />
                     <Text type="secondary">
                       Cập nhật mật khẩu để bảo vệ tài khoản của bạn
                     </Text>
-                  </div>
-                  <Button
+                      </div>
+                      <Button
                     type="primary"
-                    icon={<LockOutlined />}
-                    onClick={() => setShowPasswordModal(true)}
-                  >
+                        icon={<LockOutlined />}
+                        onClick={() => setShowPasswordModal(true)}
+                      >
                     Đổi mật khẩu
-                  </Button>
-                </div>
+                      </Button>
+                    </div>
               </Card>
             </Col>
           </Row>

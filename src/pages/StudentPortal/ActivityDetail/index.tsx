@@ -20,140 +20,27 @@ import {
 import dayjs from "dayjs";
 import React from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import type { ScheduleItemDto } from "../../../types/Schedule";
 import "./ActivityDetail.scss";
 
 const { Title, Text } = Typography;
-
-interface ActivityDetailData {
-  id: string;
-  date: string;
-  slot: number;
-  slotTime: string;
-  studentGroup: string;
-  instructor: {
-    code: string;
-    name: string;
-    email: string;
-    meetUrl: string;
-  };
-  course: {
-    code: string;
-    name: string;
-  };
-  sessionNumber: number;
-  sessionType: string;
-  sessionDescription: string;
-  campus: string;
-  programme: string;
-  attendance: "attended" | "absent" | "not_yet";
-  recordTime: string;
-  room: string;
-  building: string;
-}
 
 const ActivityDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Mock activity data
-  const getActivityData = (activityId: string): ActivityDetailData | null => {
-    const mockData: Record<string, ActivityDetailData> = {
-      hcm202_tue_slot2: {
-        id: "hcm202_tue_slot2",
-        date: "2025-09-23",
-        slot: 2,
-        slotTime: "09:30 - 11:20",
-        studentGroup: "Half1_GD1705",
-        instructor: {
-          code: "DuyNK32",
-          name: "Dr. Nguyen Van Duy",
-          email: "DuyNK33@fe.edu.vn",
-          meetUrl: "https://meet.google.com/abc-defg-hij",
-        },
-        course: {
-          code: "HCM202",
-          name: "Ho Chi Minh Ideology",
-        },
-        sessionNumber: 5,
-        sessionType: "Theory",
-        sessionDescription:
-          "Ho Chi Minh's thoughts on national independence and socialism",
-        campus: "FPT University Ho Chi Minh",
-        programme: "Software Engineering",
-        attendance: "not_yet",
-        recordTime: "2025-07-25T11:21:00",
-        room: "NVH 409",
-        building: "NVH",
-      },
-      mln131_tue_slot3: {
-        id: "mln131_tue_slot3",
-        date: "2025-09-23",
-        slot: 3,
-        slotTime: "12:30 - 14:20",
-        studentGroup: "Half2_GD1705",
-        instructor: {
-          code: "TranTB",
-          name: "Prof. Tran Thi Binh",
-          email: "TranTB@fe.edu.vn",
-          meetUrl: "https://meet.google.com/xyz-uvwx-123",
-        },
-        course: {
-          code: "MLN131",
-          name: "Marxist-Leninist Philosophy",
-        },
-        sessionNumber: 8,
-        sessionType: "Practical",
-        sessionDescription:
-          "Dialectical materialism and historical materialism",
-        campus: "FPT University Ho Chi Minh",
-        programme: "Software Engineering",
-        attendance: "attended",
-        recordTime: "2025-07-25T14:35:00",
-        room: "NVH 502",
-        building: "NVH",
-      },
-      sep490_sat_slot3: {
-        id: "sep490_sat_slot3",
-        date: "2025-09-27",
-        slot: 3,
-        slotTime: "12:30 - 14:20",
-        studentGroup: "Team_Alpha",
-        instructor: {
-          code: "LeVC",
-          name: "Mr. Le Van Cuong",
-          email: "LeVC@fe.edu.vn",
-          meetUrl: "https://meet.google.com/sep-490-alpha",
-        },
-        course: {
-          code: "SEP490",
-          name: "Capstone Project",
-        },
-        sessionNumber: 12,
-        sessionType: "Project Review",
-        sessionDescription: "Final project presentation and evaluation",
-        campus: "FPT University Ho Chi Minh",
-        programme: "Software Engineering",
-        attendance: "not_yet",
-        recordTime: "2025-07-25T16:45:00",
-        room: "P.136",
-        building: "Alpha",
-      },
-    };
+  const slot = (location.state as { slot?: ScheduleItemDto })?.slot;
 
-    return mockData[activityId] || null;
-  };
-
-  const activityData = getActivityData(id || "");
-
-  if (!activityData) {
+  if (!slot) {
     return (
       <div className="activity-detail">
         <Card>
           <div style={{ textAlign: "center", padding: "48px 0" }}>
             <Title level={3}>Không tìm thấy hoạt động</Title>
             <Text type="secondary">
-              Hoạt động được yêu cầu không thể tìm thấy.
+              Hoạt động yêu cầu không có trong dữ liệu hiện tại. Vui lòng quay
+              lại thời khóa biểu để chọn hoạt động khác.
             </Text>
             <br />
             <Button
@@ -170,8 +57,17 @@ const ActivityDetail: React.FC = () => {
     );
   }
 
-  const getAttendanceTag = (attendance: string) => {
-    switch (attendance) {
+  const attendanceStatus =
+    slot.isPresent === true
+      ? "attended"
+      : slot.isPresent === false
+      ? "absent"
+      : slot.hasAttendance
+      ? "not_yet"
+      : "unknown";
+
+  const getAttendanceTag = () => {
+    switch (attendanceStatus) {
       case "attended":
         return (
           <Tag color="success" icon={<CheckCircleOutlined />}>
@@ -191,33 +87,31 @@ const ActivityDetail: React.FC = () => {
           </Tag>
         );
       default:
-        return <Tag color="default">Không xác định</Tag>;
+        return <Tag color="default">Chưa có dữ liệu</Tag>;
     }
   };
 
   const handleInstructorClick = () => {
-    navigate(`/student-portal/instructor/${activityData.instructor.code}`, {
-      state: { instructorData: activityData.instructor, fromActivity: true },
+    if (!slot.teacherId) return;
+    navigate(`/student-portal/instructor/${slot.teacherId}`, {
+      state: { fromActivity: true },
     });
   };
 
-  const handleStudentGroupClick = () => {
-    navigate(`/student-portal/class-list/${activityData.course.code}`, {
-      state: {
-        courseData: activityData.course,
-        studentGroup: activityData.studentGroup,
-        fromActivity: true,
-      },
-    });
-  };
-
-  const handleMeetURL = () => {
-    window.open(activityData.instructor.meetUrl, "_blank");
+  const handleClassClick = () => {
+    if (!slot.classId && !slot.subjectCode) return;
+    navigate(
+      `/student-portal/class-list/${slot.classId || slot.subjectCode || ""}`,
+      {
+        state: {
+          fromActivity: true,
+        },
+      }
+    );
   };
 
   return (
     <div className="activity-detail">
-      {/* Header */}
       <div className="detail-header">
         <Button
           icon={<ArrowLeftOutlined />}
@@ -230,10 +124,10 @@ const ActivityDetail: React.FC = () => {
         <Title level={2} style={{ margin: 0, color: "#1890ff" }}>
           Chi tiết hoạt động
         </Title>
+        <Text type="secondary">Mã hoạt động: {id}</Text>
       </div>
 
       <Row gutter={[24, 24]}>
-        {/* Main Information */}
         <Col xs={24}>
           <Card className="main-info-card">
             <Descriptions title="Thông tin lớp học" column={2} bordered>
@@ -241,7 +135,7 @@ const ActivityDetail: React.FC = () => {
                 <Space>
                   <CalendarOutlined />
                   <Text strong>
-                    {dayjs(activityData.date).format("dddd DD/MM/YYYY")}
+                    {dayjs(slot.date).format("dddd DD/MM/YYYY")}
                   </Text>
                 </Space>
               </Descriptions.Item>
@@ -250,52 +144,68 @@ const ActivityDetail: React.FC = () => {
                 <Space>
                   <ClockCircleOutlined />
                   <Text>
-                    {activityData.slot} ({activityData.slotTime})
+                    {slot.timeSlotName || "Ca"} (
+                    {slot.startTime
+                      ? dayjs(slot.startTime, "HH:mm:ss").format("HH:mm")
+                      : "--:--"}
+                    {" - "}
+                    {slot.endTime
+                      ? dayjs(slot.endTime, "HH:mm:ss").format("HH:mm")
+                      : "--:--"}
+                    )
                   </Text>
                 </Space>
-              </Descriptions.Item>
-
-              <Descriptions.Item label="Nhóm sinh viên" span={2}>
-                <Button
-                  type="link"
-                  style={{ padding: 0, color: "#1890ff" }}
-                  onClick={handleStudentGroupClick}
-                >
-                  {activityData.studentGroup}
-                </Button>
-              </Descriptions.Item>
-
-              <Descriptions.Item label="Giảng viên" span={2}>
-                <Button
-                  type="link"
-                  style={{ padding: 0, color: "#1890ff" }}
-                  onClick={handleInstructorClick}
-                >
-                  {activityData.instructor.code} -{" "}
-                  {activityData.instructor.name}
-                </Button>
               </Descriptions.Item>
 
               <Descriptions.Item label="Môn học" span={2}>
                 <Space>
                   <BookOutlined />
                   <Text strong>
-                    {activityData.course.name} ({activityData.course.code})
+                    {slot.subjectName} ({slot.subjectCode})
                   </Text>
                 </Space>
               </Descriptions.Item>
 
-              <Descriptions.Item label="Số buổi học" span={2}>
-                <Tag color="blue">{activityData.sessionNumber}</Tag>
+              <Descriptions.Item label="Lớp học" span={2}>
+                <Button
+                  type="link"
+                  style={{ padding: 0 }}
+                  onClick={handleClassClick}
+                >
+                  {slot.classCode || slot.classId}
+                </Button>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Giảng viên" span={2}>
+                {slot.teacherName ? (
+                  <Button
+                    type="link"
+                    style={{ padding: 0 }}
+                    onClick={handleInstructorClick}
+                  >
+                    {slot.teacherName}
+                  </Button>
+                ) : (
+                  <Text>Chưa cập nhật</Text>
+                )}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Trạng thái" span={2}>
+                <Tag color="processing">{slot.status || "Scheduled"}</Tag>
               </Descriptions.Item>
 
               <Descriptions.Item label="Điểm danh" span={2}>
-                {getAttendanceTag(activityData.attendance)}
+                {getAttendanceTag()}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Thời gian ghi nhận" span={2}>
+              <Descriptions.Item label="Ghi chú" span={2}>
+                <Text>{slot.notes || "Không có ghi chú"}</Text>
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Sĩ số" span={2}>
                 <Text>
-                  {dayjs(activityData.recordTime).format("DD/MM/YYYY HH:mm:ss")}
+                  {slot.totalStudents ?? 0} sinh viên • Có mặt:{" "}
+                  {slot.presentCount ?? 0} • Vắng: {slot.absentCount ?? 0}
                 </Text>
               </Descriptions.Item>
             </Descriptions>
