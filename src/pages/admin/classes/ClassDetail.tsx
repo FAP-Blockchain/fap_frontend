@@ -13,14 +13,15 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
-  ArrowLeftOutlined,
-  UserOutlined,
-  BookOutlined,
-  CalendarOutlined,
-  TeamOutlined,
-  UsergroupAddOutlined,
-  InboxOutlined,
-} from "@ant-design/icons";
+  ArrowLeft,
+  Calendar,
+  Users,
+  BookOpen,
+  User,
+  UserPlus,
+  Inbox,
+  GraduationCap,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import {
   getClassByIdApi,
@@ -189,7 +190,7 @@ const ClassDetail: React.FC = () => {
       width: 150,
       render: (code: string) => (
         <div className="student-code">
-          <UserOutlined className="student-icon" />
+          <User className="student-icon" size={16} />
           <span>{code}</span>
         </div>
       ),
@@ -289,7 +290,7 @@ const ClassDetail: React.FC = () => {
       <div className="class-detail-header">
         <div className="header-left">
           <Button
-            icon={<ArrowLeftOutlined />}
+            icon={<ArrowLeft size={16} />}
             onClick={() => navigate("/admin/classes")}
             className="back-button"
           >
@@ -307,7 +308,7 @@ const ClassDetail: React.FC = () => {
       <Card className="class-info-card">
         <div className="class-info-header">
           <div className="class-icon-wrapper">
-            <BookOutlined />
+            <GraduationCap size={24} />
           </div>
           <div className="class-info-content">
             <Title level={3} className="class-name">
@@ -327,7 +328,7 @@ const ClassDetail: React.FC = () => {
           <Descriptions.Item
             label={
               <span>
-                <UserOutlined /> Giảng viên
+                <User size={16} /> Giảng viên
               </span>
             }
           >
@@ -336,7 +337,7 @@ const ClassDetail: React.FC = () => {
           <Descriptions.Item
             label={
               <span>
-                <CalendarOutlined /> Kỳ học
+                <Calendar size={16} /> Kỳ học
               </span>
             }
           >
@@ -345,7 +346,7 @@ const ClassDetail: React.FC = () => {
           <Descriptions.Item
             label={
               <span>
-                <BookOutlined /> Tín chỉ
+                <BookOpen size={16} /> Tín chỉ
               </span>
             }
           >
@@ -354,7 +355,7 @@ const ClassDetail: React.FC = () => {
           <Descriptions.Item
             label={
               <span>
-                <TeamOutlined /> Sĩ số
+                <Users size={16} /> Sĩ số
               </span>
             }
           >
@@ -363,7 +364,7 @@ const ClassDetail: React.FC = () => {
           <Descriptions.Item
             label={
               <span>
-                <UsergroupAddOutlined /> Số học sinh tối đa
+                <UserPlus size={16} /> Số học sinh tối đa
               </span>
             }
           >
@@ -372,7 +373,7 @@ const ClassDetail: React.FC = () => {
           <Descriptions.Item
             label={
               <span>
-                <InboxOutlined /> Chỗ trống
+                <Inbox size={16} /> Chỗ trống
               </span>
             }
           >
