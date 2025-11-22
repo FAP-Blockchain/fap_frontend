@@ -44,28 +44,53 @@ const BulkRegister = lazy(() => import("../pages/admin/bulkRegister"));
 const SemestersManagement = lazy(() => import("../pages/admin/semesters"));
 const AboutHelp = lazy(() => import("../pages/PublicPortal/AboutHelp"));
 const PublicHome = lazy(() => import("../pages/PublicPortal/Home"));
-const VerificationHistory = lazy(() => import("../pages/PublicPortal/VerificationHistory"));
-const VerificationPortal = lazy(() => import("../pages/PublicPortal/VerificationPortal"));
-const VerificationResults = lazy(() => import("../pages/PublicPortal/VerificationResults"));
-const ActivityDetail = lazy(() => import("../pages/StudentPortal/ActivityDetail"));
-const AttendanceReport = lazy(() => import("../pages/StudentPortal/AttendanceReport"));
-const ClassStudentList = lazy(() => import("../pages/StudentPortal/ClassStudentList"));
-const CourseRegistration = lazy(() => import("../pages/StudentPortal/CourseRegistration"));
-const CredentialDetail = lazy(() => import("../pages/StudentPortal/CredentialDetail"));
+const VerificationHistory = lazy(
+  () => import("../pages/PublicPortal/VerificationHistory")
+);
+const VerificationPortal = lazy(
+  () => import("../pages/PublicPortal/VerificationPortal")
+);
+const VerificationResults = lazy(
+  () => import("../pages/PublicPortal/VerificationResults")
+);
+const ActivityDetail = lazy(
+  () => import("../pages/StudentPortal/ActivityDetail")
+);
+const AttendanceReport = lazy(
+  () => import("../pages/StudentPortal/AttendanceReport")
+);
+const ClassStudentList = lazy(
+  () => import("../pages/StudentPortal/ClassStudentList")
+);
+const CourseRegistration = lazy(
+  () => import("../pages/StudentPortal/CourseRegistration")
+);
+const CredentialDetail = lazy(
+  () => import("../pages/StudentPortal/CredentialDetail")
+);
 const Dashboard = lazy(() => import("../pages/StudentPortal/Dashboard"));
 const GradeReport = lazy(() => import("../pages/StudentPortal/GradeReport"));
-const InstructorDetail = lazy(() => import("../pages/StudentPortal/InstructorDetail"));
-const MyCredentials = lazy(() => import("../pages/StudentPortal/MyCredentials"));
+const InstructorDetail = lazy(
+  () => import("../pages/StudentPortal/InstructorDetail")
+);
+const MyCredentials = lazy(
+  () => import("../pages/StudentPortal/MyCredentials")
+);
 const Profile = lazy(() => import("../pages/StudentPortal/Profile"));
 const Roadmap = lazy(() => import("../pages/StudentPortal/Roadmap"));
 const SharePortal = lazy(() => import("../pages/StudentPortal/SharePortal"));
-const WeeklyTimetable = lazy(() => import("../pages/StudentPortal/WeeklyTimetable"));
+const WeeklyTimetable = lazy(
+  () => import("../pages/StudentPortal/WeeklyTimetable")
+);
 const TeacherAttendance = lazy(() => import("../pages/teacher/attendance"));
-const TeacherClassStudentList = lazy(() => import("../pages/teacher/classList"));
+const TeacherClassStudentList = lazy(
+  () => import("../pages/teacher/classList")
+);
 const TeacherDashboard = lazy(() => import("../pages/teacher/dashboard"));
 const TeacherGrading = lazy(() => import("../pages/teacher/grading"));
 const TeacherResults = lazy(() => import("../pages/teacher/results"));
 const TeacherSchedule = lazy(() => import("../pages/teacher/schedule"));
+const TeacherProfile = lazy(() => import("../pages/teacher/profile"));
 
 // Extended Route Config with Menu Metadata
 export interface RouteConfig {
@@ -376,6 +401,16 @@ export const teacherRoutes: RouteConfig = {
       menuSection: "main",
     },
     {
+      path: "/teacher/profile",
+      element: <TeacherProfile />,
+      menuLabel: "Hồ sơ",
+      menuIcon: <UserOutlined />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.TEACHER],
+      menuIndex: 2,
+      menuSection: "main",
+    },
+    {
       path: "/teacher/class-list/:courseCode",
       element: <TeacherClassStudentList />,
       showInMenu: false,
@@ -388,7 +423,7 @@ export const teacherRoutes: RouteConfig = {
       showInMenu: true,
       allowedRoles: [ROLE_CODES.TEACHER],
       requiredPermissions: [PERMISSIONS.MANAGE_ATTENDANCE],
-      menuIndex: 2,
+      menuIndex: 3,
       menuSection: "main",
     },
     {
@@ -399,7 +434,7 @@ export const teacherRoutes: RouteConfig = {
       showInMenu: true,
       allowedRoles: [ROLE_CODES.TEACHER],
       requiredPermissions: [PERMISSIONS.MANAGE_GRADES],
-      menuIndex: 3,
+      menuIndex: 4,
       menuSection: "main",
     },
     {
@@ -409,7 +444,7 @@ export const teacherRoutes: RouteConfig = {
       menuIcon: <LineChartOutlined />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.TEACHER],
-      menuIndex: 4,
+      menuIndex: 5,
       menuSection: "main",
     },
   ],
