@@ -85,7 +85,7 @@ function TimeSlotsManagement() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <ClockCircleOutlined style={{ color: "#1890ff" }} />
             <span style={{ fontWeight: 500 }}>
-              {record.startTime} - {record.endTime}
+            {record.startTime} - {record.endTime}
             </span>
           </div>
           <div style={{ fontSize: "12px", color: "#999", marginTop: 4 }}>
@@ -103,7 +103,7 @@ function TimeSlotsManagement() {
       render: (total: number) => (
         <Tag color="blue" style={{ fontSize: "14px", padding: "4px 12px" }}>
           {total} slot
-        </Tag>
+            </Tag>
       ),
     },
     {
@@ -169,11 +169,11 @@ function TimeSlotsManagement() {
       const result = await deleteTimeSlot(id);
       
       if (result.success) {
-        showNotification(
-          "success",
-          "Xóa thành công",
+    showNotification(
+      "success",
+      "Xóa thành công",
           "Ca học đã được xóa khỏi hệ thống"
-        );
+    );
         await loadTimeSlots();
       } else {
         showNotification(
@@ -239,11 +239,11 @@ function TimeSlotsManagement() {
         name: values.name,
         startTime: startTime,
         endTime: endTime,
-      };
+        };
 
       setLoading(true);
 
-      if (editingSlot) {
+        if (editingSlot) {
         // Cập nhật ca học
         const result = await updateTimeSlot(editingSlot.id, requestData);
         
@@ -275,8 +275,8 @@ function TimeSlotsManagement() {
             `Ca học "${values.name}" đã được thêm vào hệ thống`
           );
           await loadTimeSlots();
-          setIsModalVisible(false);
-          form.resetFields();
+        setIsModalVisible(false);
+        form.resetFields();
         } else {
           showNotification(
             "error",
@@ -328,33 +328,33 @@ function TimeSlotsManagement() {
               >
                 Làm mới
               </Button>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAddNew}
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddNew}
                 size="large"
-              >
+            >
                 Thêm ca học mới
-              </Button>
+            </Button>
             </Space>
           </Col>
         </Row>
 
         <Spin spinning={loading}>
-          <Table
-            columns={columns}
-            dataSource={dataSource}
-            rowKey="id"
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
+        <Table
+          columns={columns}
+          dataSource={dataSource}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} ca học`,
-              position: ["bottomRight"],
+            position: ["bottomRight"],
               pageSizeOptions: ["10", "20", "50", "100"],
-            }}
-            className="custom-table"
+          }}
+          className="custom-table"
             scroll={{ x: 800 }}
-          />
+        />
         </Spin>
 
         {/* Modal thêm/sửa ca học */}
@@ -379,20 +379,20 @@ function TimeSlotsManagement() {
             layout="vertical"
             name="timeSlot_form"
             requiredMark={false}
-          >
-            <Form.Item
+                >
+                <Form.Item
               name="name"
               label="Tên ca học"
-              rules={[
+                  rules={[
                 { required: true, message: "Vui lòng nhập tên ca học!" },
                 { max: 100, message: "Tên ca học không được vượt quá 100 ký tự!" },
-              ]}
-            >
+                  ]}
+                >
               <Input
                 placeholder="VD: Ca 1, Ca 2, Ca sáng, Ca chiều..."
                 size="large"
               />
-            </Form.Item>
+                </Form.Item>
 
             <Row gutter={16}>
               <Col span={12}>
@@ -418,22 +418,22 @@ function TimeSlotsManagement() {
                   label="Giờ kết thúc"
                   rules={[
                     { required: true, message: "Vui lòng chọn giờ kết thúc!" },
-                    ({ getFieldValue }) => ({
+                ({ getFieldValue }) => ({
                       validator(_: any, value: Dayjs) {
                         const startTime = getFieldValue("startTime");
                         if (!value || !startTime) {
                           return Promise.resolve();
                         }
                         if (value.isBefore(startTime) || value.isSame(startTime)) {
-                          return Promise.reject(
+                      return Promise.reject(
                             new Error("Giờ kết thúc phải sau giờ bắt đầu!")
-                          );
-                        }
-                        return Promise.resolve();
-                      },
-                    }),
-                  ]}
-                >
+                      );
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+            >
                   <TimePicker
                     style={{ width: "100%" }}
                     format="HH:mm"
@@ -441,7 +441,7 @@ function TimeSlotsManagement() {
                     size="large"
                     minuteStep={5}
                   />
-                </Form.Item>
+            </Form.Item>
               </Col>
             </Row>
 
