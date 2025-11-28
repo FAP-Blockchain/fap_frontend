@@ -31,4 +31,3 @@ export interface TimeSlotResponse {
   errors?: string[];
 }
 
-
