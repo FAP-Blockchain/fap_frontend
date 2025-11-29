@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   Card,
@@ -11,10 +12,8 @@ import {
   DatePicker,
   message,
   Tag,
-  Popconfirm,
   Row,
   Col,
-  Statistic,
   Badge,
   Tooltip,
   QRCode,
@@ -22,10 +21,10 @@ import {
   Descriptions,
   Typography,
   Alert,
+  Spin,
 } from "antd";
 import {
   PlusOutlined,
-  EditOutlined,
   SearchOutlined,
   TrophyOutlined,
   UserOutlined,
@@ -38,313 +37,239 @@ import {
   FileTextOutlined,
   SafetyOutlined,
   BlockOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type {
-  Credential,
+  CredentialDto,
+  CredentialDetailDto,
   CredentialFormData,
   CredentialStats,
 } from "../../../types/Credential";
+import {
+  fetchCredentialsApi,
+  getCredentialByIdApi,
+  createCredentialApi,
+  revokeCredentialApi,
+  getCredentialQRCodeApi,
+  downloadCredentialPdfApi,
+  approveCredentialApi,
+  rejectCredentialApi,
+} from "../../../services/admin/credentials/api";
+import dayjs from "dayjs";
 import "./index.scss";
 
 const { Search } = Input;
 const { Option } = Select;
 const { TextArea } = Input;
-const { Text, Link } = Typography;
+const { Text } = Typography;
 
 const CredentialsManagement: React.FC = () => {
-  const [credentials, setCredentials] = useState<Credential[]>([
-    {
-      id: "1",
-      credentialType: "degree",
-      title: "Bachelor of Software Engineering",
-      description: "Bằng cử nhân Công nghệ phần mềm",
-      studentId: "1",
-      studentName: "Nguyễn Phi Hùng",
-      studentCode: "SE170107",
-      issuerId: "admin1",
-      issuerName: "Admin System",
-      issueDate: "2024-06-15",
-      status: "active",
-      blockchainHash: "0x1234567890abcdef...",
-      transactionHash: "0xabcdef1234567890...",
-      ipfsHash: "QmX1Y2Z3...",
-      metadata: {
-        gpa: 3.8,
-        credits: 140,
-        academicYear: "2020-2024",
-        course: "Software Engineering",
-      },
-      verificationUrl: "https://verify.fap-blockchain.edu.vn/credential/1",
-      qrCode: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
-      createdAt: "2024-06-15T10:00:00Z",
-      updatedAt: "2024-06-15T10:00:00Z",
-    },
-    {
-      id: "2",
-      credentialType: "certificate",
-      title: "Blockchain Development Certificate",
-      description: "Chứng chỉ phát triển Blockchain",
-      studentId: "2",
-      studentName: "Nguyễn Trung Nam",
-      studentCode: "SE170246",
-      issuerId: "teacher1",
-      issuerName: "Nguyễn Ngọc Lâm",
-      issueDate: "2024-05-20",
-      status: "active",
-      blockchainHash: "0x9876543210fedcba...",
-      transactionHash: "0xfedcba0987654321...",
-      metadata: {
-        grade: "A",
-        course: "Advanced Blockchain Programming",
-        classId: "1",
-        className: "BC101",
-        semester: "Spring 2024",
-      },
-      verificationUrl: "https://verify.fap-blockchain.edu.vn/credential/2",
-      createdAt: "2024-05-20T14:30:00Z",
-      updatedAt: "2024-05-20T14:30:00Z",
-    },
-    {
-      id: "3",
-      credentialType: "transcript",
-      title: "Academic Transcript - Spring 2024",
-      description: "Bảng điểm học kỳ xuân 2024",
-      studentId: "3",
-      studentName: "Huỳnh Gia Bảo",
-      studentCode: "SE170118",
-      issuerId: "admin1",
-      issuerName: "Academic Office",
-      issueDate: "2024-06-01",
-      status: "active",
-      blockchainHash: "0x5555aaaa9999bbbb...",
-      transactionHash: "0xbbbb9999aaaa5555...",
-      metadata: {
-        gpa: 3.9,
-        credits: 18,
-        semester: "Spring 2024",
-        academicYear: "2023-2024",
-      },
-      verificationUrl: "https://verify.fap-blockchain.edu.vn/credential/3",
-      createdAt: "2024-06-01T09:15:00Z",
-      updatedAt: "2024-06-01T09:15:00Z",
-    },
-    {
-      id: "4",
-      credentialType: "achievement",
-      title: "Outstanding Student Award",
-      description: "Giải thưởng sinh viên xuất sắc",
-      studentId: "4",
-      studentName: "Nghiêm Văn Hoàng",
-      studentCode: "SE170117",
-      issuerId: "admin1",
-      issuerName: "Admin System",
-      issueDate: "2024-03-15",
-      status: "revoked",
-      blockchainHash: "0x7777cccc3333dddd...",
-      transactionHash: "0xdddd3333cccc7777...",
-      metadata: {
-        gpa: 3.7,
-        academicYear: "2023-2024",
-      },
-      revokedAt: "2024-04-01T10:00:00Z",
-      revokedBy: "admin1",
-      revokedReason: "Duplicate entry found",
-      createdAt: "2024-03-15T16:45:00Z",
-      updatedAt: "2024-04-01T10:00:00Z",
-    },
-  ]);
-
-  const [filteredCredentials, setFilteredCredentials] =
-    useState<Credential[]>(credentials);
+  const navigate = useNavigate();
+  const [credentials, setCredentials] = useState<CredentialDto[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [isRevokeModalVisible, setIsRevokeModalVisible] = useState(false);
-  const [editingCredential, setEditingCredential] = useState<Credential | null>(
-    null
-  );
-  const [viewingCredential, setViewingCredential] = useState<Credential | null>(
-    null
-  );
-  const [revokingCredential, setRevokingCredential] =
-    useState<Credential | null>(null);
+  const [viewingCredential, setViewingCredential] = useState<CredentialDetailDto | null>(null);
+  const [revokingCredential, setRevokingCredential] = useState<CredentialDto | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<string>("");
   const [form] = Form.useForm();
   const [revokeForm] = Form.useForm();
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-
-  // Mock students data
-  const students = [
-    { id: "1", name: "Nguyễn Phi Hùng", code: "SE170107" },
-    { id: "2", name: "Nguyễn Trung Nam", code: "SE170246" },
-    { id: "3", name: "Huỳnh Gia Bảo", code: "SE170118" },
-    { id: "4", name: "Nghiêm Văn Hoàng", code: "SE170117" },
-  ];
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 5,
+    total: 0,
+  });
 
   // Statistics
   const stats: CredentialStats = {
     total: credentials.length,
-    active: credentials.filter((c) => c.status === "active").length,
-    revoked: credentials.filter((c) => c.status === "revoked").length,
-    expired: credentials.filter((c) => c.status === "expired").length,
+    active: credentials.filter((c) => c.status === "Active" || c.status === "Issued").length,
+    revoked: credentials.filter((c) => c.status === "Revoked").length,
+    pending: credentials.filter((c) => c.status === "Pending").length,
     thisMonth: credentials.filter(
-      (c) => new Date(c.issueDate).getMonth() === new Date().getMonth()
+      (c) => c.issueDate && dayjs(c.issueDate).isValid() && dayjs(c.issueDate).isSame(dayjs(), "month")
     ).length,
     byType: {
-      degree: credentials.filter((c) => c.credentialType === "degree").length,
-      certificate: credentials.filter((c) => c.credentialType === "certificate")
-        .length,
-      transcript: credentials.filter((c) => c.credentialType === "transcript")
-        .length,
-      achievement: credentials.filter((c) => c.credentialType === "achievement")
-        .length,
+      completion: credentials.filter((c) => c.certificateType === "Completion").length,
+      subject: credentials.filter((c) => c.certificateType === "Subject").length,
+      semester: credentials.filter((c) => c.certificateType === "Semester").length,
+      roadmap: credentials.filter((c) => c.certificateType === "Roadmap").length,
     },
   };
 
+  // Fetch credentials from API
+  const fetchCredentials = async (page = 1, pageSize = 5) => {
+    setLoading(true);
+    try {
+      const response = await fetchCredentialsApi({
+        page,
+        pageSize,
+        searchTerm: searchText || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        certificateType: typeFilter !== "all" ? typeFilter : undefined,
+      });
+
+      const items = response.items || [];
+      const normalizedItems = items.map((item: any) => ({
+        ...item,
+        issueDate: item.issueDate || item.issuedDate || item.completionDate || "",
+      }));
+      setCredentials(normalizedItems as CredentialDto[]);
+      setPagination({
+        current: response.page || page,
+        pageSize: response.pageSize || pageSize,
+        total: response.totalCount || 0,
+      });
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail || "Không thể tải danh sách chứng chỉ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCredentials(pagination.current, pagination.pageSize);
+  }, []);
+
   const handleSearch = (value: string) => {
     setSearchText(value);
-    filterCredentials(value, statusFilter, typeFilter);
   };
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
-    filterCredentials(searchText, value, typeFilter);
   };
 
   const handleTypeFilter = (value: string) => {
     setTypeFilter(value);
-    filterCredentials(searchText, statusFilter, value);
   };
 
-  const filterCredentials = (search: string, status: string, type: string) => {
-    let filtered = credentials;
-
-    if (search) {
-      filtered = filtered.filter(
-        (credential) =>
-          credential.title.toLowerCase().includes(search.toLowerCase()) ||
-          credential.studentName.toLowerCase().includes(search.toLowerCase()) ||
-          credential.studentCode.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (status !== "all") {
-      filtered = filtered.filter((credential) => credential.status === status);
-    }
-
-    if (type !== "all") {
-      filtered = filtered.filter(
-        (credential) => credential.credentialType === type
-      );
-    }
-
-    setFilteredCredentials(filtered);
+  const handleApplyFilters = () => {
+    fetchCredentials(1, pagination.pageSize);
   };
 
-  const showModal = (credential?: Credential) => {
-    if (credential) {
-      setEditingCredential(credential);
-      form.setFieldsValue({
-        ...credential,
-        expiryDate: credential.expiryDate
-          ? new Date(credential.expiryDate)
-          : undefined,
-      });
-    } else {
-      setEditingCredential(null);
-      form.resetFields();
-    }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchText !== undefined) {
+        handleApplyFilters();
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchText, statusFilter, typeFilter]);
+
+  const showModal = () => {
+    form.resetFields();
     setIsModalVisible(true);
   };
 
-  const showViewModal = (credential: Credential) => {
-    setViewingCredential(credential);
-    setIsViewModalVisible(true);
+  const showViewModal = async (credential: CredentialDto) => {
+    setLoading(true);
+    try {
+      const detail = await getCredentialByIdApi(credential.id);
+      const normalizedDetail = {
+        ...detail,
+        issueDate: detail.issueDate || (detail as any).issuedDate || detail.completionDate || "",
+      } as CredentialDetailDto;
+      setViewingCredential(normalizedDetail);
+      
+      // Fetch QR code
+      const qrResponse = await getCredentialQRCodeApi(credential.id);
+      setQrCodeData(qrResponse.qrCodeData);
+      
+      setIsViewModalVisible(true);
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail || "Không thể tải thông tin chứng chỉ");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const showRevokeModal = (credential: Credential) => {
+  const showRevokeModal = (credential: CredentialDto) => {
     setRevokingCredential(credential);
     revokeForm.resetFields();
     setIsRevokeModalVisible(true);
   };
 
-  const handleOk = () => {
-    form.validateFields().then((values: CredentialFormData) => {
-      const student = students.find((s) => s.id === values.studentId);
-      const credentialData: Credential = {
-        id: editingCredential?.id || Date.now().toString(),
-        ...values,
-        studentName: student?.name || "",
-        studentCode: student?.code || "",
-        issuerId: "admin1",
-        issuerName: "Current Admin",
-        issueDate:
-          editingCredential?.issueDate ||
-          new Date().toISOString().split("T")[0],
-        expiryDate: values.expiryDate?.toISOString().split("T")[0],
-        status: editingCredential?.status || "active",
-        blockchainHash:
-          editingCredential?.blockchainHash ||
-          `0x${Math.random().toString(16).substr(2, 20)}...`,
-        transactionHash:
-          editingCredential?.transactionHash ||
-          `0x${Math.random().toString(16).substr(2, 20)}...`,
-        verificationUrl: `https://verify.fap-blockchain.edu.vn/credential/${
-          editingCredential?.id || Date.now()
-        }`,
-        createdAt: editingCredential?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      setLoading(true);
+
+      const payload: CredentialFormData = {
+        studentId: values.studentId,
+        certificateType: values.certificateType,
+        subjectId: values.subjectId,
+        semesterId: values.semesterId,
+        roadmapId: values.roadmapId,
+        completionDate: values.completionDate ? dayjs(values.completionDate).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+        finalGrade: values.finalGrade,
+        letterGrade: values.letterGrade,
+        classification: values.classification,
       };
 
-      if (editingCredential) {
-        setCredentials((prev) =>
-          prev.map((c) => (c.id === editingCredential.id ? credentialData : c))
-        );
-        message.success("Cập nhật chứng chỉ thành công!");
-      } else {
-        setCredentials((prev) => [...prev, credentialData]);
-        message.success("Cấp chứng chỉ thành công! Đã ghi lên blockchain.");
-      }
-
+      await createCredentialApi(payload);
+      message.success("Cấp chứng chỉ thành công! Đã ghi lên blockchain.");
       setIsModalVisible(false);
-      filterCredentials(searchText, statusFilter, typeFilter);
-    });
+      form.resetFields();
+      fetchCredentials(pagination.current, pagination.pageSize);
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail || "Không thể tạo chứng chỉ");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRevoke = () => {
-    revokeForm.validateFields().then((values) => {
+  const handleRevoke = async () => {
+    try {
+      const values = await revokeForm.validateFields();
       if (revokingCredential) {
-        const updatedCredential: Credential = {
-          ...revokingCredential,
-          status: "revoked",
-          revokedAt: new Date().toISOString(),
-          revokedBy: "admin1",
-          revokedReason: values.reason,
-          updatedAt: new Date().toISOString(),
-        };
-
-        setCredentials((prev) =>
-          prev.map((c) =>
-            c.id === revokingCredential.id ? updatedCredential : c
-          )
-        );
-        message.success(
-          "Thu hồi chứng chỉ thành công! Đã cập nhật trên blockchain."
-        );
+        setLoading(true);
+        await revokeCredentialApi(revokingCredential.id, {
+          reason: values.reason,
+        });
+        message.success("Thu hồi chứng chỉ thành công! Đã cập nhật trên blockchain.");
         setIsRevokeModalVisible(false);
-        filterCredentials(searchText, statusFilter, typeFilter);
+        fetchCredentials(pagination.current, pagination.pageSize);
       }
-    });
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail || "Không thể thu hồi chứng chỉ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async (credentialId: string) => {
+    try {
+      setLoading(true);
+      const blob = await downloadCredentialPdfApi(credentialId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `credential_${credentialId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      message.success("Đã tải xuống chứng chỉ");
+    } catch (error: any) {
+      message.error(error?.response?.data?.detail || "Không thể tải xuống chứng chỉ");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "active":
+      case "issued":
         return "success";
       case "revoked":
         return "error";
-      case "expired":
+      case "pending":
         return "warning";
       default:
         return "default";
@@ -352,27 +277,28 @@ const CredentialsManagement: React.FC = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "active":
+      case "issued":
         return "Có hiệu lực";
       case "revoked":
         return "Đã thu hồi";
-      case "expired":
-        return "Hết hạn";
+      case "pending":
+        return "Đang chờ";
       default:
         return status;
     }
   };
 
   const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "degree":
+    switch (type.toLowerCase()) {
+      case "completion":
         return <TrophyOutlined />;
-      case "certificate":
+      case "subject":
         return <SafetyOutlined />;
-      case "transcript":
+      case "semester":
         return <FileTextOutlined />;
-      case "achievement":
+      case "roadmap":
         return <CheckCircleOutlined />;
       default:
         return <FileTextOutlined />;
@@ -380,14 +306,14 @@ const CredentialsManagement: React.FC = () => {
   };
 
   const getTypeColor = (type: string) => {
-    switch (type) {
-      case "degree":
+    switch (type.toLowerCase()) {
+      case "completion":
         return "gold";
-      case "certificate":
+      case "subject":
         return "blue";
-      case "transcript":
+      case "semester":
         return "green";
-      case "achievement":
+      case "roadmap":
         return "purple";
       default:
         return "default";
@@ -395,15 +321,15 @@ const CredentialsManagement: React.FC = () => {
   };
 
   const getTypeText = (type: string) => {
-    switch (type) {
-      case "degree":
-        return "Bằng cấp";
-      case "certificate":
-        return "Chứng chỉ";
-      case "transcript":
-        return "Bảng điểm";
-      case "achievement":
-        return "Thành tích";
+    switch (type.toLowerCase()) {
+      case "completion":
+        return "Hoàn thành";
+      case "subject":
+        return "Môn học";
+      case "semester":
+        return "Học kỳ";
+      case "roadmap":
+        return "Lộ trình";
       default:
         return type;
     }
@@ -414,20 +340,43 @@ const CredentialsManagement: React.FC = () => {
     message.success("Đã sao chép vào clipboard!");
   };
 
-  const columns: ColumnsType<Credential> = [
+  const formatDateDisplay = (date?: string | null, fallback: string = "Chưa cập nhật") => {
+    if (!date) return fallback;
+    const parsed = dayjs(date);
+    return parsed.isValid() ? parsed.format("DD/MM/YYYY") : fallback;
+  };
+
+  const handleNavigateDetail = (credential: CredentialDto) => {
+    navigate(`/admin/credentials/${credential.id}`);
+  };
+
+  const handleNavigateRequests = () => {
+    navigate("/admin/credential-requests");
+  };
+
+  const columns: ColumnsType<CredentialDto> = [
     {
       title: "Chứng chỉ",
       key: "credential",
       width: 300,
       render: (_, record) => (
-        <div className="credential-info">
+        <div 
+          className="credential-info clickable"
+          onClick={() => handleNavigateDetail(record)}
+          style={{ cursor: "pointer" }}
+        >
           <div className="credential-header">
-            {getTypeIcon(record.credentialType)}
+            {getTypeIcon(record.certificateType)}
             <div className="credential-details">
-              <div className="credential-title">{record.title}</div>
-              <div className="credential-description">{record.description}</div>
-              <Tag color={getTypeColor(record.credentialType)}>
-                {getTypeText(record.credentialType)}
+              <div className="credential-title">
+                {record.subjectName || record.semesterName || record.roadmapName || "Chứng chỉ hoàn thành"}
+              </div>
+              <div className="credential-description">
+                {record.letterGrade && `Điểm: ${record.letterGrade}`}
+                {record.finalGrade && ` (${record.finalGrade})`}
+              </div>
+              <Tag color={getTypeColor(record.certificateType)}>
+                {getTypeText(record.certificateType)}
               </Tag>
             </div>
           </div>
@@ -449,20 +398,14 @@ const CredentialsManagement: React.FC = () => {
       ),
     },
     {
-      title: "Người cấp",
-      dataIndex: "issuerName",
-      key: "issuerName",
-      width: 120,
-    },
-    {
       title: "Ngày cấp",
       dataIndex: "issueDate",
       key: "issueDate",
-      width: 120,
-      render: (date) => (
+      width: 140,
+      render: (_, record) => (
         <div className="issue-date">
           <CalendarOutlined className="date-icon" />
-          {new Date(date).toLocaleDateString("vi-VN")}
+          {formatDateDisplay(record.issueDate, "Chưa cấp")}
         </div>
       ),
     },
@@ -479,14 +422,15 @@ const CredentialsManagement: React.FC = () => {
       title: "Blockchain",
       key: "blockchain",
       width: 100,
+      fixed: "right",
       render: (_, record) => (
         <div className="blockchain-info">
-          <Tooltip title={`Hash: ${record.blockchainHash}`}>
+          <Tooltip title={`Hash: ${record.credentialHash}`}>
             <Button
               type="text"
               icon={<BlockOutlined />}
               size="small"
-              onClick={() => copyToClipboard(record.blockchainHash || "")}
+              onClick={() => copyToClipboard(record.credentialHash || "")}
             />
           </Tooltip>
           <Tooltip title="Xem QR Code">
@@ -503,26 +447,18 @@ const CredentialsManagement: React.FC = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 150,
+      width: 180,
+      fixed: "right",
       render: (_, record) => (
         <Space>
-          <Tooltip title="Xem chi tiết">
+          <Tooltip title="Tải PDF">
             <Button
-              type="primary"
-              icon={<EyeOutlined />}
+              icon={<DownloadOutlined />}
               size="small"
-              onClick={() => showViewModal(record)}
+              onClick={() => handleDownloadPdf(record.id)}
             />
           </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              icon={<EditOutlined />}
-              size="small"
-              onClick={() => showModal(record)}
-              disabled={record.status === "revoked"}
-            />
-          </Tooltip>
-          {record.status === "active" && (
+          {(record.status === "Active" || record.status === "Issued") && (
             <Tooltip title="Thu hồi">
               <Button
                 danger
@@ -537,6 +473,11 @@ const CredentialsManagement: React.FC = () => {
     },
   ];
 
+  const perPage = pagination.pageSize || 10;
+  const totalPages = Math.max(1, Math.ceil(pagination.total / perPage));
+  const statusSummary = statusFilter === "all" ? "Tất cả" : getStatusText(statusFilter);
+  const typeSummary = typeFilter === "all" ? "Tất cả" : getTypeText(typeFilter);
+
   return (
     <div className="credentials-management">
       <div className="page-header">
@@ -544,165 +485,210 @@ const CredentialsManagement: React.FC = () => {
         <p>Cấp phát và quản lý chứng chỉ trên blockchain</p>
       </div>
 
-      {/* Statistics */}
-      <Row gutter={[16, 16]} className="stats-row">
-        <Col xs={12} sm={6}>
-          <Card className="stat-card">
-            <Statistic
-              title="Tổng chứng chỉ"
-              value={stats.total}
-              prefix={<TrophyOutlined />}
-              valueStyle={{ color: "#ff6b35" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card className="stat-card">
-            <Statistic
-              title="Có hiệu lực"
-              value={stats.active}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#52c41a" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card className="stat-card">
-            <Statistic
-              title="Đã thu hồi"
-              value={stats.revoked}
-              prefix={<CloseCircleOutlined />}
-              valueStyle={{ color: "#ff4d4f" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card className="stat-card">
-            <Statistic
-              title="Tháng này"
-              value={stats.thisMonth}
-              prefix={<CalendarOutlined />}
-              valueStyle={{ color: "#1890ff" }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Credential Types Stats */}
-      <Row gutter={[16, 16]} className="type-stats-row">
-        <Col xs={12} sm={6}>
-          <Card className="type-stat-card">
-            <Statistic
-              title="Bằng cấp"
-              value={stats.byType.degree}
-              prefix={<TrophyOutlined />}
-              valueStyle={{ color: "#faad14" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card className="type-stat-card">
-            <Statistic
-              title="Chứng chỉ"
-              value={stats.byType.certificate}
-              prefix={<SafetyOutlined />}
-              valueStyle={{ color: "#1890ff" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card className="type-stat-card">
-            <Statistic
-              title="Bảng điểm"
-              value={stats.byType.transcript}
-              prefix={<FileTextOutlined />}
-              valueStyle={{ color: "#52c41a" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card className="type-stat-card">
-            <Statistic
-              title="Thành tích"
-              value={stats.byType.achievement}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#722ed1" }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Card className="credentials-table-card">
-        <div className="table-header">
-          <div className="filters">
-            <Search
-              placeholder="Tìm kiếm theo tên, sinh viên..."
-              allowClear
-              onSearch={handleSearch}
-              onChange={(e) => handleSearch(e.target.value)}
-              style={{ width: 300 }}
-              prefix={<SearchOutlined />}
-            />
-            <Select
-              placeholder="Trạng thái"
-              style={{ width: 150 }}
-              value={statusFilter}
-              onChange={handleStatusFilter}
-              suffixIcon={<FilterOutlined />}
-            >
-              <Option value="all">Tất cả</Option>
-              <Option value="active">Có hiệu lực</Option>
-              <Option value="revoked">Đã thu hồi</Option>
-              <Option value="expired">Hết hạn</Option>
-            </Select>
-            <Select
-              placeholder="Loại chứng chỉ"
-              style={{ width: 150 }}
-              value={typeFilter}
-              onChange={handleTypeFilter}
-              suffixIcon={<FilterOutlined />}
-            >
-              <Option value="all">Tất cả</Option>
-              <Option value="degree">Bằng cấp</Option>
-              <Option value="certificate">Chứng chỉ</Option>
-              <Option value="transcript">Bảng điểm</Option>
-              <Option value="achievement">Thành tích</Option>
-            </Select>
+      <Card className="credentials-panel">
+        <div className="overview-header">
+          <div className="title-block">
+            <span className="title-icon">
+              <SafetyOutlined />
+            </span>
+            <div>
+              <div className="eyebrow">Blockchain Credential Vault</div>
+              <h2>Giám sát chứng chỉ</h2>
+              <p className="subtitle">Cấp, xác thực và thu hồi chứng chỉ được ghi trên blockchain.</p>
+            </div>
           </div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => showModal()}
-            size="large"
-          >
-            Cấp chứng chỉ
-          </Button>
+          <div className="header-actions">
+            <Button
+              className="toggle-details-btn"
+              onClick={handleNavigateRequests}
+            >
+              Danh sách đơn
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className="primary-action"
+              size="middle"
+              onClick={showModal}
+            >
+              Cấp chứng chỉ
+            </Button>
+          </div>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={filteredCredentials}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} chứng chỉ`,
-          }}
-          scroll={{ x: 1200 }}
-        />
+        <div className="stats-compact">
+          <div className="stat-chip total">
+            <span className="value">{stats.total}</span>
+            <span>Tổng chứng chỉ</span>
+          </div>
+          <div className="stat-chip issued">
+            <span className="value">{stats.active}</span>
+            <span>Có hiệu lực</span>
+          </div>
+          <div className="stat-chip pending">
+            <span className="value">{stats.pending}</span>
+            <span>Đang chờ</span>
+          </div>
+          <div className="stat-chip month">
+            <span className="value">{stats.thisMonth}</span>
+            <span>Trong tháng</span>
+          </div>
+        </div>
+
+        <div className="stats-inline">
+          <div className="stat-item completion">
+            <div className="stat-icon-wrapper">
+              <TrophyOutlined />
+            </div>
+            <div className="stat-content">
+              <span className="stat-value">{stats.byType.completion}</span>
+              <span className="stat-label">Hoàn thành</span>
+            </div>
+          </div>
+          <div className="stat-item subject">
+            <div className="stat-icon-wrapper">
+              <SafetyOutlined />
+            </div>
+            <div className="stat-content">
+              <span className="stat-value">{stats.byType.subject}</span>
+              <span className="stat-label">Môn học</span>
+            </div>
+          </div>
+          <div className="stat-item semester">
+            <div className="stat-icon-wrapper">
+              <FileTextOutlined />
+            </div>
+            <div className="stat-content">
+              <span className="stat-value">{stats.byType.semester}</span>
+              <span className="stat-label">Học kỳ</span>
+            </div>
+          </div>
+          <div className="stat-item roadmap">
+            <div className="stat-icon-wrapper">
+              <CheckCircleOutlined />
+            </div>
+            <div className="stat-content">
+              <span className="stat-value">{stats.byType.roadmap}</span>
+              <span className="stat-label">Lộ trình</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="filters-row">
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} md={10}>
+              <div className="filter-field">
+                <label>Tìm kiếm</label>
+                <Search
+                  placeholder="Tên, mã sinh viên, chứng chỉ..."
+                  allowClear
+                  onSearch={handleSearch}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  prefix={<SearchOutlined />}
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <div className="filter-field status-select">
+                <label>Trạng thái</label>
+                <Select
+                  placeholder="Trạng thái"
+                  style={{ width: "100%" }}
+                  value={statusFilter}
+                  onChange={handleStatusFilter}
+                  suffixIcon={<FilterOutlined />}
+                >
+                  <Option value="all">Tất cả</Option>
+                  <Option value="Active">Có hiệu lực</Option>
+                  <Option value="Issued">Có hiệu lực</Option>
+                  <Option value="Revoked">Đã thu hồi</Option>
+                  <Option value="Pending">Đang chờ</Option>
+                </Select>
+              </div>
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <div className="filter-field type-select">
+                <label>Loại chứng chỉ</label>
+                <Select
+                  placeholder="Loại"
+                  style={{ width: "100%" }}
+                  value={typeFilter}
+                  onChange={handleTypeFilter}
+                  suffixIcon={<FilterOutlined />}
+                >
+                  <Option value="all">Tất cả</Option>
+                  <Option value="Completion">Hoàn thành</Option>
+                  <Option value="Subject">Môn học</Option>
+                  <Option value="Semester">Học kỳ</Option>
+                  <Option value="Roadmap">Lộ trình</Option>
+                </Select>
+              </div>
+            </Col>
+          </Row>
+          <div className="filter-summary">
+            <span>
+              Trạng thái: <strong>{statusSummary}</strong>
+            </span>
+            <span>
+              Loại: <strong>{typeSummary}</strong>
+            </span>
+          </div>
+          <div className="filter-meta text-right">
+            {`Trang ${pagination.current} / ${totalPages} • ${pagination.total.toLocaleString()} chứng chỉ`}
+          </div>
+        </div>
+
+        <div className="table-section">
+          <div className="credentials-table">
+            <Spin spinning={loading} tip="Đang tải dữ liệu...">
+              <Table
+                columns={columns}
+                dataSource={credentials}
+                rowKey="id"
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  pageSizeOptions: ["5", "10", "20", "50"],
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} của ${total} chứng chỉ`,
+                  onChange: (page, pageSize) => {
+                    fetchCredentials(page, pageSize);
+                  },
+                }}
+                scroll={{ x: 1200 }}
+                locale={{
+                  emptyText: (
+                    <div style={{ padding: "40px 0" }}>
+                      <TrophyOutlined
+                        style={{ fontSize: 48, color: "#d9d9d9", marginBottom: 16 }}
+                      />
+                      <div style={{ color: "#999" }}>Chưa có chứng chỉ nào</div>
+                      <div style={{ color: "#bfbfbf", fontSize: 12, marginTop: 8 }}>
+                        Nhấn "Cấp chứng chỉ" để tạo chứng chỉ mới
+                      </div>
+                    </div>
+                  ),
+                }}
+              />
+            </Spin>
+          </div>
+        </div>
       </Card>
 
       {/* Add/Edit Modal */}
       <Modal
-        title={editingCredential ? "Chỉnh sửa chứng chỉ" : "Cấp chứng chỉ mới"}
+        title="Cấp chứng chỉ mới"
         open={isModalVisible}
         onOk={handleOk}
         onCancel={() => setIsModalVisible(false)}
         width={700}
-        okText={editingCredential ? "Cập nhật" : "Cấp chứng chỉ"}
+        okText="Cấp chứng chỉ"
         cancelText="Hủy"
+        confirmLoading={loading}
       >
         <Alert
           message="Lưu ý: Chứng chỉ sẽ được ghi lên blockchain và không thể xóa"
@@ -713,100 +699,87 @@ const CredentialsManagement: React.FC = () => {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ credentialType: "certificate" }}
+          initialValues={{ certificateType: "Subject" }}
         >
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="credentialType"
+                name="certificateType"
                 label="Loại chứng chỉ"
                 rules={[
                   { required: true, message: "Vui lòng chọn loại chứng chỉ!" },
                 ]}
               >
                 <Select placeholder="Chọn loại chứng chỉ">
-                  <Option value="degree">Bằng cấp</Option>
-                  <Option value="certificate">Chứng chỉ</Option>
-                  <Option value="transcript">Bảng điểm</Option>
-                  <Option value="achievement">Thành tích</Option>
+                  <Option value="Completion">Hoàn thành</Option>
+                  <Option value="Subject">Môn học</Option>
+                  <Option value="Semester">Học kỳ</Option>
+                  <Option value="Roadmap">Lộ trình</Option>
                 </Select>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="studentId"
-                label="Sinh viên"
+                label="ID Sinh viên"
                 rules={[
-                  { required: true, message: "Vui lòng chọn sinh viên!" },
+                  { required: true, message: "Vui lòng nhập ID sinh viên!" },
                 ]}
               >
-                <Select placeholder="Chọn sinh viên" showSearch>
-                  {students.map((student) => (
-                    <Option key={student.id} value={student.id}>
-                      {student.code} - {student.name}
-                    </Option>
-                  ))}
-                </Select>
+                <Input placeholder="Nhập ID sinh viên (GUID)" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="subjectId" label="ID Môn học">
+                <Input placeholder="ID môn học (tuỳ chọn)" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="semesterId" label="ID Học kỳ">
+                <Input placeholder="ID học kỳ (tuỳ chọn)" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="roadmapId" label="ID Lộ trình">
+                <Input placeholder="ID lộ trình (tuỳ chọn)" />
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item
-            name="title"
-            label="Tiêu đề chứng chỉ"
-            rules={[{ required: true, message: "Vui lòng nhập tiêu đề!" }]}
+            name="completionDate"
+            label="Ngày hoàn thành"
+            rules={[{ required: true, message: "Vui lòng chọn ngày hoàn thành!" }]}
           >
-            <Input placeholder="Nhập tiêu đề chứng chỉ" />
-          </Form.Item>
-
-          <Form.Item name="description" label="Mô tả">
-            <TextArea placeholder="Nhập mô tả chứng chỉ" rows={3} />
-          </Form.Item>
-
-          <Form.Item name="expiryDate" label="Ngày hết hạn">
             <DatePicker
-              placeholder="Chọn ngày hết hạn"
+              placeholder="Chọn ngày hoàn thành"
               style={{ width: "100%" }}
             />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name={["metadata", "gpa"]} label="GPA">
+              <Form.Item name="finalGrade" label="Điểm số">
                 <InputNumber
                   min={0}
-                  max={4}
+                  max={10}
                   step={0.1}
-                  placeholder="GPA"
+                  placeholder="Điểm số"
                   style={{ width: "100%" }}
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name={["metadata", "credits"]} label="Số tín chỉ">
-                <InputNumber
-                  min={0}
-                  placeholder="Số tín chỉ"
-                  style={{ width: "100%" }}
-                />
+              <Form.Item name="letterGrade" label="Điểm chữ">
+                <Input placeholder="A, B+, C..." />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name={["metadata", "grade"]} label="Điểm">
-                <Input placeholder="Điểm (A, B, C...)" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name={["metadata", "course"]} label="Khóa học">
-                <Input placeholder="Tên khóa học" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name={["metadata", "semester"]} label="Học kỳ">
-                <Input placeholder="Học kỳ" />
+              <Form.Item name="classification" label="Xếp loại">
+                <Input placeholder="Xuất sắc, Giỏi..." />
               </Form.Item>
             </Col>
           </Row>
@@ -823,7 +796,7 @@ const CredentialsManagement: React.FC = () => {
             Đóng
           </Button>,
         ]}
-        width={800}
+        width={900}
       >
         {viewingCredential && (
           <div className="credential-detail">
@@ -832,17 +805,11 @@ const CredentialsManagement: React.FC = () => {
                 <Descriptions title="Thông tin chứng chỉ" column={2} bordered>
                   <Descriptions.Item label="Loại" span={2}>
                     <Tag
-                      color={getTypeColor(viewingCredential.credentialType)}
-                      icon={getTypeIcon(viewingCredential.credentialType)}
+                      color={getTypeColor(viewingCredential.certificateType)}
+                      icon={getTypeIcon(viewingCredential.certificateType)}
                     >
-                      {getTypeText(viewingCredential.credentialType)}
+                      {getTypeText(viewingCredential.certificateType)}
                     </Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Tiêu đề" span={2}>
-                    {viewingCredential.title}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Mô tả" span={2}>
-                    {viewingCredential.description}
                   </Descriptions.Item>
                   <Descriptions.Item label="Sinh viên">
                     {viewingCredential.studentName}
@@ -850,13 +817,26 @@ const CredentialsManagement: React.FC = () => {
                   <Descriptions.Item label="Mã SV">
                     {viewingCredential.studentCode}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Người cấp">
-                    {viewingCredential.issuerName}
-                  </Descriptions.Item>
+                  {viewingCredential.subjectName && (
+                    <Descriptions.Item label="Môn học" span={2}>
+                      {viewingCredential.subjectName}
+                    </Descriptions.Item>
+                  )}
+                  {viewingCredential.semesterName && (
+                    <Descriptions.Item label="Học kỳ" span={2}>
+                      {viewingCredential.semesterName}
+                    </Descriptions.Item>
+                  )}
+                  {viewingCredential.roadmapName && (
+                    <Descriptions.Item label="Lộ trình" span={2}>
+                      {viewingCredential.roadmapName}
+                    </Descriptions.Item>
+                  )}
                   <Descriptions.Item label="Ngày cấp">
-                    {new Date(viewingCredential.issueDate).toLocaleDateString(
-                      "vi-VN"
-                    )}
+                    {formatDateDisplay(viewingCredential.issueDate, "Chưa cấp")}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Ngày hoàn thành">
+                    {formatDateDisplay(viewingCredential.completionDate, "Chưa hoàn thành")}
                   </Descriptions.Item>
                   <Descriptions.Item label="Trạng thái" span={2}>
                     <Badge
@@ -864,29 +844,32 @@ const CredentialsManagement: React.FC = () => {
                       text={getStatusText(viewingCredential.status)}
                     />
                   </Descriptions.Item>
-                  <Descriptions.Item label="Blockchain Hash" span={2}>
-                    <Text copyable={{ text: viewingCredential.blockchainHash }}>
-                      {viewingCredential.blockchainHash}
+                  <Descriptions.Item label="Credential Hash" span={2}>
+                    <Text copyable={{ text: viewingCredential.credentialHash }}>
+                      {viewingCredential.credentialHash}
                     </Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="URL xác thực" span={2}>
-                    <Link
-                      href={viewingCredential.verificationUrl}
-                      target="_blank"
-                    >
-                      {viewingCredential.verificationUrl}
-                    </Link>
-                  </Descriptions.Item>
-                  {viewingCredential.status === "revoked" && (
+                  {viewingCredential.blockchainTxHash && (
+                    <Descriptions.Item label="Blockchain TX" span={2}>
+                      <Text copyable={{ text: viewingCredential.blockchainTxHash }}>
+                        {viewingCredential.blockchainTxHash}
+                      </Text>
+                    </Descriptions.Item>
+                  )}
+                  {viewingCredential.ipfsHash && (
+                    <Descriptions.Item label="IPFS Hash" span={2}>
+                      <Text copyable={{ text: viewingCredential.ipfsHash }}>
+                        {viewingCredential.ipfsHash}
+                      </Text>
+                    </Descriptions.Item>
+                  )}
+                  {viewingCredential.status === "Revoked" && (
                     <>
                       <Descriptions.Item label="Lý do thu hồi" span={2}>
-                        {viewingCredential.revokedReason}
+                        {viewingCredential.revocationReason}
                       </Descriptions.Item>
                       <Descriptions.Item label="Ngày thu hồi">
-                        {viewingCredential.revokedAt &&
-                          new Date(
-                            viewingCredential.revokedAt
-                          ).toLocaleDateString("vi-VN")}
+                        {formatDateDisplay(viewingCredential.revokedAt, "Chưa xác định")}
                       </Descriptions.Item>
                       <Descriptions.Item label="Người thu hồi">
                         {viewingCredential.revokedBy}
@@ -895,41 +878,26 @@ const CredentialsManagement: React.FC = () => {
                   )}
                 </Descriptions>
 
-                {viewingCredential.metadata && (
+                {(viewingCredential.finalGrade || viewingCredential.letterGrade || viewingCredential.classification) && (
                   <Descriptions
                     title="Thông tin học tập"
                     column={2}
                     bordered
                     style={{ marginTop: 16 }}
                   >
-                    {viewingCredential.metadata.gpa && (
-                      <Descriptions.Item label="GPA">
-                        {viewingCredential.metadata.gpa}
+                    {viewingCredential.finalGrade && (
+                      <Descriptions.Item label="Điểm số">
+                        {viewingCredential.finalGrade}
                       </Descriptions.Item>
                     )}
-                    {viewingCredential.metadata.credits && (
-                      <Descriptions.Item label="Tín chỉ">
-                        {viewingCredential.metadata.credits}
+                    {viewingCredential.letterGrade && (
+                      <Descriptions.Item label="Điểm chữ">
+                        {viewingCredential.letterGrade}
                       </Descriptions.Item>
                     )}
-                    {viewingCredential.metadata.grade && (
-                      <Descriptions.Item label="Điểm">
-                        {viewingCredential.metadata.grade}
-                      </Descriptions.Item>
-                    )}
-                    {viewingCredential.metadata.course && (
-                      <Descriptions.Item label="Khóa học">
-                        {viewingCredential.metadata.course}
-                      </Descriptions.Item>
-                    )}
-                    {viewingCredential.metadata.semester && (
-                      <Descriptions.Item label="Học kỳ">
-                        {viewingCredential.metadata.semester}
-                      </Descriptions.Item>
-                    )}
-                    {viewingCredential.metadata.academicYear && (
-                      <Descriptions.Item label="Năm học">
-                        {viewingCredential.metadata.academicYear}
+                    {viewingCredential.classification && (
+                      <Descriptions.Item label="Xếp loại" span={2}>
+                        {viewingCredential.classification}
                       </Descriptions.Item>
                     )}
                   </Descriptions>
@@ -938,19 +906,30 @@ const CredentialsManagement: React.FC = () => {
               <Col span={8}>
                 <div className="qr-code-section">
                   <h4>QR Code xác thực</h4>
-                  <QRCode
-                    value={viewingCredential.verificationUrl || ""}
-                    size={200}
-                  />
-                  <p
-                    style={{
-                      textAlign: "center",
-                      marginTop: 8,
-                      fontSize: "12px",
-                    }}
-                  >
+                  {qrCodeData ? (
+                    <img 
+                      src={qrCodeData} 
+                      alt="QR Code" 
+                      style={{ width: 200, height: 200 }}
+                    />
+                  ) : (
+                    <QRCode
+                      value={`${window.location.origin}/verify/${viewingCredential.id}`}
+                      size={200}
+                    />
+                  )}
+                  <p style={{ textAlign: "center", marginTop: 8, fontSize: "12px" }}>
                     Quét để xác thực chứng chỉ
                   </p>
+                  <Button 
+                    type="primary" 
+                    icon={<DownloadOutlined />} 
+                    block
+                    style={{ marginTop: 8 }}
+                    onClick={() => handleDownloadPdf(viewingCredential.id)}
+                  >
+                    Tải PDF
+                  </Button>
                 </div>
               </Col>
             </Row>
