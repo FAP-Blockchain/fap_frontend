@@ -38,6 +38,15 @@ const SubjectDetail = lazy(
   () => import("../pages/admin/subjects/SubjectDetail")
 );
 const CredentialsManagement = lazy(() => import("../pages/admin/credentials"));
+const CredentialDetailAdmin = lazy(
+  () => import("../pages/admin/credentials/CredentialDetail")
+);
+const CredentialRequestsPage = lazy(
+  () => import("../pages/admin/credentialRequests")
+);
+const CredentialRequestDetailAdmin = lazy(
+  () => import("../pages/admin/credentialRequests/RequestDetail")
+);
 const CurriculumManagement = lazy(() => import("../pages/admin/curriculums"));
 const ManagerProduct = lazy(() => import("../pages/admin/products"));
 const ReportsManagement = lazy(() => import("../pages/admin/reports"));
@@ -59,6 +68,9 @@ const VerificationPortal = lazy(
 );
 const VerificationResults = lazy(
   () => import("../pages/PublicPortal/VerificationResults")
+);
+const CertificateVerifyDetail = lazy(
+  () => import("../pages/PublicPortal/CertificateVerifyDetail")
 );
 const ActivityDetail = lazy(
   () => import("../pages/StudentPortal/ActivityDetail")
@@ -221,6 +233,31 @@ export const adminRoutes: RouteConfig = {
       requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
       menuIndex: 0,
       menuSection: "tools",
+    },
+    {
+      path: "/admin/credentials/:credentialId",
+      element: <CredentialDetailAdmin />,
+      showInMenu: false,
+      allowedRoles: [ROLE_CODES.ADMIN, ROLE_CODES.MANAGER],
+      requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
+    },
+    {
+      path: "/admin/credential-requests",
+      element: <CredentialRequestsPage />,
+      menuLabel: "Đơn yêu cầu chứng chỉ",
+      menuIcon: <FileTextOutlined />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.ADMIN],
+      requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
+      menuIndex: 0.5,
+      menuSection: "tools",
+    },
+    {
+      path: "/admin/credential-requests/:requestId",
+      element: <CredentialRequestDetailAdmin />,
+      showInMenu: false,
+      allowedRoles: [ROLE_CODES.ADMIN],
+      requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
     },
     {
       path: "/admin/blockchain",
@@ -505,6 +542,10 @@ export const publicPortalRoutes: RouteConfig = {
     {
       path: "results",
       element: <VerificationResults />,
+    },
+    {
+      path: "certificates/verify/:credentialId",
+      element: <CertificateVerifyDetail />,
     },
     {
       path: "history",

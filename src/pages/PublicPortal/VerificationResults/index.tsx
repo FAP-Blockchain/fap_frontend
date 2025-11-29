@@ -1,552 +1,297 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  Card,
-  Row,
-  Col,
-  Typography,
-  Space,
-  Button,
-  Descriptions,
-  Tag,
-  Result,
-  Timeline,
-  Statistic,
-  Divider,
-  Alert,
-  QRCode,
-  Modal,
+	Alert,
+	Badge,
+	Button,
+	Card,
+	Col,
+	Divider,
+	Modal,
+	Row,
+	Space,
+	Spin,
+	Tag,
+	Tooltip,
+	Typography,
 } from "antd";
 import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  InfoCircleOutlined,
-  DownloadOutlined,
-  ShareAltOutlined,
-  PrinterOutlined,
-  SafetyCertificateOutlined,
-  TrophyOutlined,
-  BookOutlined,
-  CalendarOutlined,
-  LinkOutlined,
-  ExclamationCircleOutlined,
+	ArrowLeftOutlined,
+	CalendarOutlined,
+	DownloadOutlined,
+	SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import CredentialServices from "../../../services/credential/api.service";
+import type { CertificatePublicDto } from "../../../types/Credential";
+import { QRCode } from "antd";
 import "./VerificationResults.scss";
 
 const { Title, Text, Paragraph } = Typography;
 
-interface VerificationResultData {
-  success: boolean;
-  credentialId: string;
-  verificationMethod: string;
-  timestamp: string;
-  credentialInfo?: {
-    title: string;
-    type: "degree" | "certificate" | "transcript";
-    institution: string;
-    studentName: string;
-    studentId: string;
-    issueDate: string;
-    gpa?: string;
-    major?: string;
-    status: "active" | "revoked" | "expired";
-    blockchainHash: string;
-    transactionHash: string;
-    blockNumber: number;
-  };
-  verificationDetails: {
-    blockchainVerified: boolean;
-    institutionVerified: boolean;
-    tamperProof: boolean;
-    verificationScore: number;
-  };
-}
+const certificateLabels: Record<string, string> = {
+	SubjectCompletion: "Chứng chỉ hoàn thành môn học",
+	SemesterCompletion: "Chứng chỉ hoàn thành học kỳ",
+	RoadmapCompletion: "Chứng chỉ hoàn thành lộ trình",
+};
 
 const VerificationResults: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [resultData, setResultData] = useState<VerificationResultData | null>(
-    null
-  );
+	const { credentialId } = useParams<{ credentialId: string }>();
+	const [searchParams] = useSearchParams();
+	const navigate = useNavigate();
+	const [certificate, setCertificate] =
+		useState<CertificatePublicDto | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [showQRModal, setShowQRModal] = useState(false);
 
-  useEffect(() => {
-    // Get data from navigation state or create mock data
-    const stateData = location.state;
+	useEffect(() => {
+		const fetchDetail = async () => {
+			if (!credentialId) {
+				setError("Thiếu mã chứng chỉ");
+				setIsLoading(false);
+				return;
+			}
 
-    if (stateData?.success) {
-      // Create mock successful verification result
-      setResultData({
-        success: true,
-        credentialId: stateData.verificationData?.id || "deg_001",
-        verificationMethod: stateData.method || "manual",
-        timestamp: new Date().toISOString(),
-        credentialInfo: {
-          title: "Bachelor of Software Engineering",
-          type: "degree",
-          institution: "FPT University",
-          studentName: "Nghiêm Văn Hoàng",
-          studentId: "SE171234",
-          issueDate: "2024-06-15",
-          gpa: "3.85",
-          major: "Software Engineering",
-          status: "active",
-          blockchainHash: "0x1a2b3c4d5e6f7890abcdef1234567890abcdef12",
-          transactionHash: "0xabcdef1234567890abcdef1234567890abcdef12",
-          blockNumber: 18567234,
-        },
-        verificationDetails: {
-          blockchainVerified: true,
-          institutionVerified: true,
-          tamperProof: true,
-          verificationScore: 100,
-        },
-      });
-    } else {
-      // Mock failed verification
-      setResultData({
-        success: false,
-        credentialId: "unknown_001",
-        verificationMethod: "manual",
-        timestamp: new Date().toISOString(),
-        verificationDetails: {
-          blockchainVerified: false,
-          institutionVerified: false,
-          tamperProof: false,
-          verificationScore: 0,
-        },
-      });
-    }
-  }, [location.state]);
+			setIsLoading(true);
+			setError(null);
+			try {
+				const data = await CredentialServices.getPublicCertificateById(
+					credentialId
+				);
+				setCertificate(data as CertificatePublicDto);
+				// Nếu cần có thể gọi thêm verifyCredential với query param ở đây
+				// const credentialNumber = searchParams.get("credentialNumber") || credentialId;
+				// const verificationHash = searchParams.get("verificationHash") || undefined;
+				// void CredentialServices.verifyCredential({ credentialNumber, verificationHash });
+			} catch (err) {
+				const messageText =
+					((err as {
+						response?: { data?: { message?: string } };
+						message?: string;
+					})?.response?.data?.message ||
+					(err as { message?: string }).message ||
+					"Không thể tải dữ liệu chứng chỉ");
+				setError(messageText);
+			} finally {
+				setIsLoading(false);
+			}
+		};
 
-  if (!resultData) {
-    return (
-      <div className="verification-results">
-        <Card>
-          <Result
-            status="404"
-            title="Không có dữ liệu xác thực"
-            subTitle="Vui lòng quay lại cổng xác thực để xác thực chứng chỉ."
-            extra={
-              <Button
-                type="primary"
-                onClick={() => navigate("/public-portal/verify")}
-              >
-                Bắt đầu xác thực
-              </Button>
-            }
-          />
-        </Card>
-      </div>
-    );
-  }
+		void fetchDetail();
+	}, [credentialId, searchParams]);
 
-  const getCredentialIcon = (type?: string) => {
-    switch (type) {
-      case "degree":
-        return <TrophyOutlined style={{ color: "#52c41a", fontSize: 24 }} />;
-      case "certificate":
-        return (
-          <SafetyCertificateOutlined
-            style={{ color: "#1890ff", fontSize: 24 }}
-          />
-        );
-      case "transcript":
-        return <BookOutlined style={{ color: "#722ed1", fontSize: 24 }} />;
-      default:
-        return (
-          <SafetyCertificateOutlined
-            style={{ color: "#8c8c8c", fontSize: 24 }}
-          />
-        );
-    }
-  };
+	const certificateTitle = useMemo(() => {
+		if (!certificate) return "";
+		return (
+			certificate.subjectName ||
+			certificate.roadmapName ||
+			certificateLabels[certificate.certificateType] ||
+			certificate.certificateType
+		);
+	}, [certificate]);
 
-  const getStatusTag = (status?: string) => {
-    switch (status) {
-      case "active":
-        return (
-          <Tag color="success" icon={<CheckCircleOutlined />}>
-            Hoạt động
-          </Tag>
-        );
-      case "revoked":
-        return (
-          <Tag color="error" icon={<CloseCircleOutlined />}>
-            Đã thu hồi
-          </Tag>
-        );
-      case "expired":
-        return (
-          <Tag color="warning" icon={<ExclamationCircleOutlined />}>
-            Hết hạn
-          </Tag>
-        );
-      default:
-        return <Tag color="default">Không xác định</Tag>;
-    }
-  };
+	const formattedIssuedDate = certificate?.issueDate
+		? dayjs(certificate.issueDate).format("DD MMMM, YYYY")
+		: "—";
 
-  const handleDownloadReport = () => {
-    // Mock PDF download
-    const element = document.createElement("a");
-    element.setAttribute(
-      "download",
-      `verification-report-${resultData.credentialId}.pdf`
-    );
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
+	const handleDownloadPdf = () => {
+		// TODO: tích hợp API tải PDF public nếu backend hỗ trợ
+	};
 
-  const verificationTimeline = [
-    {
-      color: "green",
-      children: (
-        <div>
-          <Text strong>Bắt đầu xác thực</Text>
-          <br />
-          <Text type="secondary">
-            {dayjs(resultData.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      color: resultData.verificationDetails.blockchainVerified
-        ? "green"
-        : "red",
-      children: (
-        <div>
-          <Text strong>Xác thực Blockchain</Text>
-          <br />
-          <Text type="secondary">
-            {resultData.verificationDetails.blockchainVerified
-              ? "✅ Đã xác thực trên blockchain"
-              : "❌ Không tìm thấy trên blockchain"}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      color: resultData.verificationDetails.institutionVerified
-        ? "green"
-        : "red",
-      children: (
-        <div>
-          <Text strong>Xác thực tổ chức</Text>
-          <br />
-          <Text type="secondary">
-            {resultData.verificationDetails.institutionVerified
-              ? "✅ Đã xác nhận bởi tổ chức"
-              : "❌ Tổ chức chưa được xác thực"}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      color: resultData.success ? "green" : "red",
-      children: (
-        <div>
-          <Text strong>Kết quả cuối cùng</Text>
-          <br />
-          <Text type="secondary">
-            {resultData.success
-              ? "✅ Xác thực hoàn tất thành công"
-              : "❌ Xác thực thất bại"}
-          </Text>
-        </div>
-      ),
-    },
-  ];
+	if (isLoading) {
+		return (
+			<div className="verification-results-page">
+				<Spin size="large" />
+			</div>
+		);
+	}
 
-  return (
-    <div className="verification-results">
-      {/* Result Header */}
-      <Card
-        className={`result-header ${resultData.success ? "success" : "failed"}`}
-      >
-        <Result
-          status={resultData.success ? "success" : "error"}
-          title={
-            <Title level={2} style={{ margin: 0 }}>
-              {resultData.success
-                ? "Chứng chỉ đã được xác thực thành công!"
-                : "Xác thực thất bại"}
-            </Title>
-          }
-          subTitle={
-            <Text style={{ fontSize: 16 }}>
-              {resultData.success
-                ? "Chứng chỉ đã được xác thực thành công với hồ sơ blockchain."
-                : "Chứng chỉ không thể được xác thực hoặc không tồn tại trong hồ sơ của chúng tôi."}
-            </Text>
-          }
-          extra={
-            <Space size="middle">
-              <Button
-                type="primary"
-                onClick={() => navigate("/public-portal/verify")}
-              >
-                Xác thực chứng chỉ khác
-              </Button>
-              {resultData.success && (
-                <>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    onClick={handleDownloadReport}
-                  >
-                    Tải báo cáo
-                  </Button>
-                  <Button icon={<PrinterOutlined />}>In kết quả</Button>
-                </>
-              )}
-            </Space>
-          }
-        />
-      </Card>
+	if (error) {
+		return (
+			<div className="verification-results-page">
+				<Alert
+					type="error"
+					message="Không thể xác thực chứng chỉ"
+					description={error}
+					showIcon
+					action={
+						<Button
+							type="primary"
+							onClick={() => navigate("/public-portal/verify")}
+						>
+							Quay lại cổng xác thực
+						</Button>
+					}
+				/>
+			</div>
+		);
+	}
 
-      {resultData.success && resultData.credentialInfo ? (
-        <Row gutter={[24, 24]}>
-          {/* Credential Details */}
-          <Col xs={24} lg={16}>
-            <Card title=" Thông tin chứng chỉ" className="detail-card">
-              <Descriptions column={2} bordered>
-                <Descriptions.Item label="Loại chứng chỉ" span={2}>
-                  <Space>
-                    {getCredentialIcon(resultData.credentialInfo.type)}
-                    <Tag
-                      color={
-                        resultData.credentialInfo.type === "degree"
-                          ? "green"
-                          : resultData.credentialInfo.type === "certificate"
-                          ? "blue"
-                          : "purple"
-                      }
-                    >
-                      {resultData.credentialInfo.type.charAt(0).toUpperCase() +
-                        resultData.credentialInfo.type.slice(1)}
-                    </Tag>
-                  </Space>
-                </Descriptions.Item>
+	if (!certificate) {
+		return (
+			<div className="verification-results-page">
+				<Alert
+					message="Không tìm thấy chứng chỉ hoặc chứng chỉ không hợp lệ"
+					type="warning"
+					showIcon
+				/>
+			</div>
+		);
+	}
 
-                <Descriptions.Item label="Tiêu đề" span={2}>
-                  <Text strong>{resultData.credentialInfo.title}</Text>
-                </Descriptions.Item>
+	const displayName = certificate.studentName || "—";
 
-                <Descriptions.Item label="Tổ chức">
-                  {resultData.credentialInfo.institution}
-                </Descriptions.Item>
-                <Descriptions.Item label="Trạng thái">
-                  {getStatusTag(resultData.credentialInfo.status)}
-                </Descriptions.Item>
+	return (
+		<div className="verification-results-page">
+			<div className="results-header">
+				<Button
+					icon={<ArrowLeftOutlined />}
+					onClick={() => navigate("/public-portal/verify")}
+				>
+					Quay lại cổng xác thực
+				</Button>
+				<Button
+					icon={<DownloadOutlined />}
+					onClick={handleDownloadPdf}
+				>
+					Tải chứng chỉ PDF
+				</Button>
+			</div>
 
-                <Descriptions.Item label="Tên sinh viên">
-                  {resultData.credentialInfo.studentName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Mã sinh viên">
-                  {resultData.credentialInfo.studentId}
-                </Descriptions.Item>
+			<Row gutter={[24, 24]}>
+				<Col xs={24} lg={12}>
+					<Card className="result-card" bordered={false}>
+						<Space direction="vertical" size={12} style={{ width: "100%" }}>
+							<Space>
+								<SafetyCertificateOutlined
+									style={{ fontSize: 32, color: "#1a94fc" }}
+								/>
+								<div>
+									<Text type="secondary">
+										{certificateLabels[certificate.certificateType] ||
+												"Chứng chỉ"}
+									</Text>
+									<Title level={3} style={{ margin: 0 }}>
+										{certificateTitle}
+									</Title>
+								</div>
+							</Space>
 
-                <Descriptions.Item label="Ngày cấp">
-                  <Space>
-                    <CalendarOutlined />
-                    {dayjs(resultData.credentialInfo.issueDate).format(
-                      "MMMM DD, YYYY"
-                    )}
-                  </Space>
-                </Descriptions.Item>
-                {resultData.credentialInfo.gpa && (
-                  <Descriptions.Item label="GPA">
-                    <Tag color="gold">{resultData.credentialInfo.gpa}</Tag>
-                  </Descriptions.Item>
-                )}
+							<Paragraph type="secondary" style={{ marginBottom: 0 }}>
+								Chứng chỉ điện tử đã được xác thực bởi UAP Blockchain. Thông tin dưới
+								dây được truy xuất trực tiếp từ hệ thống và không thể bị chỉnh sửa.
+							</Paragraph>
 
-                {resultData.credentialInfo.major && (
-                  <Descriptions.Item label="Chuyên ngành" span={2}>
-                    {resultData.credentialInfo.major}
-                  </Descriptions.Item>
-                )}
-              </Descriptions>
+							<Divider />
 
-              <Divider />
+							<Space direction="vertical" size={12} style={{ width: "100%" }}>
+								<div className="info-row">
+									<span>Họ và tên</span>
+									<span className="strong-text">{displayName}</span>
+								</div>
+								<div className="info-row">
+									<span>Mã chứng chỉ</span>
+									<Tag color="blue">{certificate.id}</Tag>
+								</div>
+								<div className="info-row">
+									<span>Ngày cấp</span>
+									<span>
+										<CalendarOutlined style={{ marginRight: 6 }} />
+										{formattedIssuedDate}
+									</span>
+								</div>
+								{certificate.letterGrade && (
+									<div className="info-row">
+										<span>Điểm trung bình</span>
+										<Tag color="gold">{certificate.letterGrade}</Tag>
+									</div>
+								)}
+								<div className="info-row">
+									<span>Trạng thái</span>
+									<Tag color={certificate.status === "Issued" ? "green" : "orange"}>
+										{certificate.status}
+									</Tag>
+								</div>
+								{certificate.semesterName && (
+									<div className="info-row">
+										<span>Học kỳ</span>
+										<span>{certificate.semesterName}</span>
+									</div>
+								)}
+								{certificate.credentialHash && (
+									<div className="info-row">
+										<span>Hash xác thực</span>
+										<Tooltip title={certificate.credentialHash}>
+											<Text code>{certificate.credentialHash.slice(0, 12)}...</Text>
+										</Tooltip>
+									</div>
+								)}
+							</Space>
+						</Space>
+					</Card>
+				</Col>
 
-              {/* Blockchain Details */}
-              <Title level={5}>Chi tiết xác thực Blockchain</Title>
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Mã hash Blockchain">
-                  <Text code copyable>
-                    {resultData.credentialInfo.blockchainHash}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Mã hash giao dịch">
-                  <Text code copyable>
-                    {resultData.credentialInfo.transactionHash}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Số khối">
-                  {resultData.credentialInfo.blockNumber.toLocaleString()}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </Col>
+				<Col xs={24} lg={12}>
+					<Card bordered={false} className="certificate-preview-card">
+						<div className="certificate-preview">
+							<div className="certificate-header">
+								<div className="issuer-block">
+									<Text className="issuer-name">UAP Blockchain</Text>
+									<Text className="certificate-type">
+										{certificateLabels[certificate.certificateType] ||
+												"Chứng chỉ"}
+									</Text>
+								</div>
+								<Badge
+									count="Đã xác thực on-chain"
+									style={{ backgroundColor: "#1a94fc" }}
+								/>
+							</div>
 
-          {/* Verification Summary */}
-          <Col xs={24} lg={8}>
-            <Space direction="vertical" size="large" style={{ width: "100%" }}>
-              {/* Verification Score */}
-              <Card>
-                <Statistic
-                  title="Điểm xác thực"
-                  value={resultData.verificationDetails.verificationScore}
-                  suffix="%"
-                  valueStyle={{
-                    color:
-                      resultData.verificationDetails.verificationScore === 100
-                        ? "#3f8600"
-                        : "#cf1322",
-                  }}
-                  prefix={<SafetyCertificateOutlined />}
-                />
-                <div style={{ marginTop: 16 }}>
-                  <Text type="secondary">
-                    Dựa trên xác thực blockchain, xác nhận tổ chức và phân tích chống giả mạo
-                  </Text>
-                </div>
-              </Card>
+							<div className="certificate-body">
+								<Text className="caption">CHỨNG NHẬN RẰNG</Text>
+								<Title level={1} className="recipient">
+									{displayName}
+								</Title>
+								<Paragraph className="description">
+									đã hoàn thành chương trình học
+								</Paragraph>
+								<Title level={2} className="program">
+									{certificateTitle}
+								</Title>
+								<Paragraph className="details">
+									Cấp ngày {formattedIssuedDate} · Mã sinh viên {certificate.studentCode}
+								</Paragraph>
+							</div>
 
-              {/* Verification Checklist */}
-              <Card title="✅ Danh sách kiểm tra xác thực">
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <div className="check-item">
-                    {resultData.verificationDetails.blockchainVerified ? (
-                      <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                    ) : (
-                      <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
-                    )}
-                    <Text style={{ marginLeft: 8 }}>Đã xác thực Blockchain</Text>
-                  </div>
-                  <div className="check-item">
-                    {resultData.verificationDetails.institutionVerified ? (
-                      <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                    ) : (
-                      <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
-                    )}
-                    <Text style={{ marginLeft: 8 }}>Đã xác nhận tổ chức</Text>
-                  </div>
-                  <div className="check-item">
-                    {resultData.verificationDetails.tamperProof ? (
-                      <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                    ) : (
-                      <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
-                    )}
-                    <Text style={{ marginLeft: 8 }}>Chống giả mạo</Text>
-                  </div>
-                </Space>
-              </Card>
+							<div className="certificate-footer">
+								<div className="signature-block">
+									<div className="signature" />
+									<Text>Phòng Đào tạo</Text>
+								</div>
+								<div className="seal">FAP</div>
+							</div>
+						</div>
+					</Card>
+				</Col>
+			</Row>
 
-              {/* Quick Actions */}
-              <Card title="Thao tác nhanh">
-                <Space direction="vertical" style={{ width: "100%" }}>
-                  <Button
-                    block
-                    icon={<ShareAltOutlined />}
-                    onClick={() => setShowQRModal(true)}
-                  >
-                    Chia sẻ xác thực
-                  </Button>
-                  <Button
-                    block
-                    icon={<LinkOutlined />}
-                    onClick={() => {
-                      navigator.clipboard.writeText(window.location.href);
-                    }}
-                  >
-                    Sao chép liên kết kết quả
-                  </Button>
-                  <Button
-                    block
-                    icon={<DownloadOutlined />}
-                    onClick={handleDownloadReport}
-                  >
-                    Tải báo cáo
-                  </Button>
-                </Space>
-              </Card>
-            </Space>
-          </Col>
-
-          {/* Verification Timeline */}
-          <Col xs={24}>
-            <Card title="📅 Dòng thời gian xác thực">
-              <Timeline items={verificationTimeline} />
-            </Card>
-          </Col>
-        </Row>
-      ) : (
-        <Row gutter={[24, 24]}>
-          <Col xs={24}>
-            <Alert
-              message="Xác thực thất bại"
-              description={
-                <div>
-                  <p>
-                    Chứng chỉ với ID{" "}
-                    <Text code>{resultData.credentialId}</Text> không thể được
-                    xác thực vì các lý do sau:
-                  </p>
-                  <ul>
-                    <li>Chứng chỉ không tìm thấy trong hồ sơ blockchain</li>
-                    <li>Định dạng chứng chỉ hoặc ID không hợp lệ</li>
-                    <li>Chứng chỉ có thể đã bị thu hồi hoặc hết hạn</li>
-                    <li>
-                      Tổ chức không tham gia mạng xác thực của chúng tôi
-                    </li>
-                  </ul>
-                  <p>
-                    Vui lòng kiểm tra lại ID chứng chỉ hoặc liên hệ với tổ chức cấp để được hỗ trợ.
-                  </p>
-                </div>
-              }
-              type="error"
-              showIcon
-              action={
-                <Button
-                  type="primary"
-                  onClick={() => navigate("/public-portal/verify")}
-                >
-                  Thử lại
-                </Button>
-              }
-            />
-          </Col>
-        </Row>
-      )}
-
-      {/* Share Modal */}
-      <Modal
-        title="Chia sẻ kết quả xác thực"
-        open={showQRModal}
-        onCancel={() => setShowQRModal(false)}
-        footer={[
-          <Button key="close" onClick={() => setShowQRModal(false)}>
-            Đóng
-          </Button>,
-        ]}
-      >
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <QRCode value={window.location.href} size={200} />
-          <br />
-          <br />
-          <Text type="secondary">
-            Quét mã QR này để xem kết quả xác thực
-          </Text>
-        </div>
-      </Modal>
-    </div>
-  );
+			<Modal
+				open={showQRModal}
+				title="QR xác thực chứng chỉ"
+				footer={null}
+				onCancel={() => setShowQRModal(false)}
+			>
+				<div style={{ textAlign: "center", padding: 20 }}>
+					<QRCode value={window.location.href} size={200} />
+					<Paragraph style={{ marginTop: 16 }}>
+						Quét mã QR này để truy cập lại trang xác thực.
+					</Paragraph>
+				</div>
+			</Modal>
+		</div>
+	);
 };
 
 export default VerificationResults;

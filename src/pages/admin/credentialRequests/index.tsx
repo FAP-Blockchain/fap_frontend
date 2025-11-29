@@ -1,0 +1,350 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  Table,
+  Tag,
+  Space,
+  Button,
+  Input,
+  Select,
+  Row,
+  Col,
+  message,
+  Modal,
+  Form,
+  Typography,
+} from "antd";
+import {
+  FileTextOutlined,
+  SearchOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+} from "@ant-design/icons";
+import type { ColumnsType } from "antd/es/table";
+import type {
+  CredentialRequestDto,
+  GetCredentialRequestsRequest,
+} from "../../../services/admin/credentials/api";
+import {
+  fetchCredentialRequestsApi,
+  approveCredentialRequestApi,
+  rejectCredentialRequestApi,
+} from "../../../services/admin/credentials/api";
+import dayjs from "dayjs";
+
+const { Search } = Input;
+const { Option } = Select;
+const { Text } = Typography;
+
+const CredentialRequestsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [requests, setRequests] = useState<CredentialRequestDto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectForm] = Form.useForm();
+
+  const fetchRequests = async (page = 1, pageSize = 10) => {
+    setLoading(true);
+    try {
+      const params: GetCredentialRequestsRequest = {
+        page,
+        pageSize,
+        searchTerm: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        certificateType: typeFilter !== "all" ? typeFilter : undefined,
+      };
+
+      const response = await fetchCredentialRequestsApi(params);
+      const items = (response.items || []).map((item) => ({
+        ...item,
+        requestDate: (item as any).requestDate || (item as any).createdAt,
+      }));
+      setRequests(items);
+      setPagination({
+        current: response.page || page,
+        pageSize: response.pageSize || pageSize,
+        total: response.totalCount || 0,
+      });
+    } catch (error: any) {
+      message.error(
+        error?.response?.data?.detail || "Không thể tải danh sách đơn yêu cầu"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests(pagination.current, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchRequests(1, pagination.pageSize);
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, statusFilter, typeFilter]);
+
+  const getStatusTag = (status: string) => {
+    const normalized = status?.toLowerCase();
+    switch (normalized) {
+      case "pending":
+        return <Tag color="gold">Đang chờ</Tag>;
+      case "approved":
+        return (
+          <Tag color="green" icon={<CheckCircleOutlined />}>Đã duyệt</Tag>
+        );
+      case "rejected":
+        return (
+          <Tag color="red" icon={<CloseCircleOutlined />}>Đã từ chối</Tag>
+        );
+      default:
+        return <Tag>{status}</Tag>;
+    }
+  };
+
+  const formatDate = (value?: string) => {
+    if (!value) return "-";
+    const d = dayjs(value);
+    return d.isValid() ? d.format("DD/MM/YYYY HH:mm") : value;
+  };
+
+  const handleApprove = async (request: CredentialRequestDto) => {
+    try {
+      setProcessingId(request.id);
+      await approveCredentialRequestApi(request.id, {
+        action: "Approve",
+        notes: "Approved by admin from request list",
+      });
+      message.success("Đã phê duyệt và cấp chứng chỉ cho đơn này.");
+      fetchRequests(pagination.current, pagination.pageSize);
+    } catch (error: any) {
+      message.error(
+        error?.response?.data?.detail || "Không thể phê duyệt đơn yêu cầu"
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const openRejectModal = (requestId: string) => {
+    setRejectingId(requestId);
+    rejectForm.resetFields();
+    setRejectModalVisible(true);
+  };
+
+  const handleConfirmReject = async () => {
+    try {
+      const values = await rejectForm.validateFields();
+      if (!rejectingId) return;
+      setProcessingId(rejectingId);
+      await rejectCredentialRequestApi(rejectingId, {
+        action: "Reject",
+        notes: values.notes,
+        rejectionReason: values.rejectionReason,
+      });
+      message.success("Đã từ chối đơn yêu cầu.");
+      setRejectModalVisible(false);
+      setRejectingId(null);
+      fetchRequests(pagination.current, pagination.pageSize);
+    } catch (error: any) {
+      if (!error?.errorFields) {
+        message.error(
+          error?.response?.data?.detail || "Không thể từ chối đơn yêu cầu"
+        );
+      }
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const columns: ColumnsType<CredentialRequestDto> = [
+    {
+      title: "Sinh viên",
+      dataIndex: "studentName",
+      key: "student",
+      width: 220,
+      render: (_, record) => (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <UserOutlined />
+          <div>
+            <div>{record.studentName}</div>
+            <div style={{ fontSize: 12, color: "#888" }}>{
+              record.studentCode
+            }</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Loại chứng chỉ",
+      dataIndex: "certificateType",
+      key: "certificateType",
+      width: 160,
+      render: (type: string) => {
+        const t = type?.toLowerCase();
+        switch (t) {
+          case "completion":
+            return <Tag color="gold">Hoàn thành</Tag>;
+          case "subject":
+            return <Tag color="blue">Môn học</Tag>;
+          case "semester":
+            return <Tag color="green">Học kỳ</Tag>;
+          case "roadmap":
+            return <Tag color="purple">Lộ trình</Tag>;
+          default:
+            return <Tag>{type}</Tag>;
+        }
+      },
+    },
+    {
+      title: "Đối tượng",
+      key: "target",
+      width: 220,
+      render: (_, record) => (
+        <div style={{ fontSize: 12 }}>
+          {record.subjectName && <div>Môn: {record.subjectName}</div>}
+          {record.semesterName && <div>Học kỳ: {record.semesterName}</div>}
+          {record.roadmapName && <div>Lộ trình: {record.roadmapName}</div>}
+        </div>
+      ),
+    },
+    {
+      title: "Ngày yêu cầu",
+      dataIndex: "requestDate",
+      key: "requestDate",
+      width: 180,
+      render: (value: string) => formatDate(value),
+    },
+    {
+      title: "Ngày xử lý",
+      dataIndex: "processedDate",
+      key: "processedDate",
+      width: 180,
+      render: (value?: string) => formatDate(value),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      width: 140,
+      render: (status: string) => getStatusTag(status),
+    },
+  ];
+
+  return (
+    <div className="credential-requests-page">
+      <Card
+        title={
+          <Space>
+            <FileTextOutlined />
+            <span>Danh sách đơn yêu cầu cấp chứng chỉ</span>
+          </Space>
+        }
+      >
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col xs={24} md={10}>
+            <Search
+              placeholder="Tìm theo tên, mã SV, loại chứng chỉ..."
+              allowClear
+              prefix={<SearchOutlined />}
+              onSearch={(value) => setSearchTerm(value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </Col>
+          <Col xs={12} md={7}>
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: "100%" }}
+            >
+              <Option value="all">Tất cả trạng thái</Option>
+              <Option value="Pending">Đang chờ</Option>
+              <Option value="Approved">Đã duyệt</Option>
+              <Option value="Rejected">Đã từ chối</Option>
+            </Select>
+          </Col>
+          <Col xs={12} md={7}>
+            <Select
+              value={typeFilter}
+              onChange={setTypeFilter}
+              style={{ width: "100%" }}
+            >
+              <Option value="all">Tất cả loại chứng chỉ</Option>
+              <Option value="Completion">Hoàn thành</Option>
+              <Option value="Subject">Môn học</Option>
+              <Option value="Semester">Học kỳ</Option>
+              <Option value="Roadmap">Lộ trình</Option>
+            </Select>
+          </Col>
+        </Row>
+
+        <Table
+          rowKey="id"
+          loading={loading}
+          columns={columns}
+          dataSource={requests}
+          onRow={(record) => ({
+            onClick: () => navigate(`/admin/credential-requests/${record.id}`),
+            style: { cursor: "pointer" },
+          })}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showSizeChanger: true,
+            pageSizeOptions: ["5", "10", "20", "50"],
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} của ${total} đơn yêu cầu`,
+            onChange: (page, pageSize) => fetchRequests(page, pageSize),
+          }}
+          scroll={{ x: 1000 }}
+        />
+      </Card>
+
+      <Modal
+        title="Lý do từ chối đơn yêu cầu"
+        open={rejectModalVisible}
+        onOk={handleConfirmReject}
+        onCancel={() => setRejectModalVisible(false)}
+        okText="Từ chối"
+        cancelText="Hủy"
+        okButtonProps={{ danger: true }}
+      >
+        <Form form={rejectForm} layout="vertical">
+          <Form.Item
+            name="rejectionReason"
+            label="Lý do từ chối"
+            rules={[{ required: true, message: "Vui lòng nhập lý do" }]}
+          >
+            <Input.TextArea rows={4} placeholder="Nhập lý do từ chối" />
+          </Form.Item>
+          <Form.Item name="notes" label="Ghi chú thêm (không bắt buộc)">
+            <Input.TextArea rows={3} placeholder="Ghi chú nội bộ" />
+          </Form.Item>
+          {rejectingId && (
+            <Text type="secondary">
+              Đang xử lý đơn: <code>{rejectingId}</code>
+            </Text>
+          )}
+        </Form>
+      </Modal>
+    </div>
+  );
+};
+
+export default CredentialRequestsPage;
