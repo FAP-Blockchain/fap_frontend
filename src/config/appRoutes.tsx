@@ -38,8 +38,16 @@ const SubjectDetail = lazy(
   () => import("../pages/admin/subjects/SubjectDetail")
 );
 const CredentialsManagement = lazy(() => import("../pages/admin/credentials"));
+const CredentialDetailAdmin = lazy(
+  () => import("../pages/admin/credentials/CredentialDetail")
+);
+const CredentialRequestsPage = lazy(
+  () => import("../pages/admin/credentialRequests")
+);
+const CredentialRequestDetailAdmin = lazy(
+  () => import("../pages/admin/credentialRequests/RequestDetail")
+);
 const CurriculumManagement = lazy(() => import("../pages/admin/curriculums"));
-const ManagerProduct = lazy(() => import("../pages/admin/products"));
 const ReportsManagement = lazy(() => import("../pages/admin/reports"));
 const SecurityManagement = lazy(() => import("../pages/admin/security"));
 const RegisterUser = lazy(() => import("../pages/admin/registerUser"));
@@ -226,6 +234,31 @@ export const adminRoutes: RouteConfig = {
       menuSection: "tools",
     },
     {
+      path: "/admin/credentials/:credentialId",
+      element: <CredentialDetailAdmin />,
+      showInMenu: false,
+      allowedRoles: [ROLE_CODES.ADMIN, ROLE_CODES.MANAGER],
+      requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
+    },
+    {
+      path: "/admin/credential-requests",
+      element: <CredentialRequestsPage />,
+      menuLabel: "Đơn yêu cầu chứng chỉ",
+      menuIcon: <FileTextOutlined />,
+      showInMenu: true,
+      allowedRoles: [ROLE_CODES.ADMIN],
+      requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
+      menuIndex: 0.5,
+      menuSection: "tools",
+    },
+    {
+      path: "/admin/credential-requests/:requestId",
+      element: <CredentialRequestDetailAdmin />,
+      showInMenu: false,
+      allowedRoles: [ROLE_CODES.ADMIN],
+      requiredPermissions: [PERMISSIONS.MANAGE_CREDENTIALS],
+    },
+    {
       path: "/admin/blockchain",
       element: <ReportsManagement />,
       menuLabel: "Giám sát Blockchain",
@@ -255,11 +288,6 @@ export const adminRoutes: RouteConfig = {
       allowedRoles: [ROLE_CODES.ADMIN], // Only admin
       menuIndex: 3,
       menuSection: "tools",
-    },
-    {
-      path: "/admin/quan-ly-san-pham",
-      element: <ManagerProduct />,
-      showInMenu: false,
     },
     {
       path: "/admin/users/register",
@@ -513,6 +541,10 @@ export const publicPortalRoutes: RouteConfig = {
     },
     {
       path: "results",
+      element: <VerificationResults />,
+    },
+    {
+      path: "certificates/verify/:credentialId",
       element: <VerificationResults />,
     },
     {

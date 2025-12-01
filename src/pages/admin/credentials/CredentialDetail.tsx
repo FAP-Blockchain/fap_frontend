@@ -1,0 +1,390 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Divider,
+  message,
+  QRCode,
+  Row,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+} from "antd";
+import {
+  ArrowLeftOutlined,
+  BlockOutlined,
+  CalendarOutlined,
+  CopyOutlined,
+  DownloadOutlined,
+  LinkOutlined,
+  QrcodeOutlined,
+  SafetyCertificateOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import type { CredentialDetailDto } from "../../../types/Credential";
+import {
+  downloadCredentialPdfApi,
+  getCredentialByIdApi,
+  getCredentialQRCodeApi,
+} from "../../../services/admin/credentials/api";
+import "./CredentialDetail.scss";
+
+const { Title, Text } = Typography;
+
+const statusBadgeColors: Record<string, "success" | "warning" | "error" | "default"> = {
+  issued: "success",
+  active: "success",
+  revoked: "error",
+  pending: "warning",
+};
+
+const typeLabels: Record<string, string> = {
+  Completion: "Hoàn thành",
+  Subject: "Môn học",
+  Semester: "Học kỳ",
+  Roadmap: "Lộ trình",
+  SubjectCompletion: "Chứng chỉ môn học",
+  SemesterCompletion: "Chứng chỉ học kỳ",
+  RoadmapCompletion: "Chứng chỉ lộ trình",
+};
+
+const formatDateDisplay = (date?: string | null, fallback = "—") => {
+  if (!date) {
+    return fallback;
+  }
+  const parsed = dayjs(date);
+  return parsed.isValid() ? parsed.format("DD/MM/YYYY") : fallback;
+};
+
+const CredentialDetail: React.FC = () => {
+  const { credentialId } = useParams<{ credentialId: string }>();
+  const navigate = useNavigate();
+  const [credential, setCredential] = useState<CredentialDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string>("");
+  const [qrLoading, setQrLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!credentialId) {
+      setError("Thiếu mã chứng chỉ");
+      setLoading(false);
+      return;
+    }
+
+    const fetchDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getCredentialByIdApi(credentialId);
+        setCredential({
+          ...result,
+          issueDate: result.issueDate || (result as Record<string, any>).issuedDate || "",
+        });
+      } catch (err) {
+        const messageText =
+          (err as { response?: { data?: { detail?: string; message?: string } } })
+            ?.response?.data?.detail ||
+          (err as { message?: string }).message ||
+          "Không thể tải thông tin chứng chỉ";
+        setError(messageText);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchDetail();
+  }, [credentialId]);
+
+  useEffect(() => {
+    if (!credential) {
+      return;
+    }
+
+    let active = true;
+    setQrLoading(true);
+
+    const fallbackUrl = (credential as any).shareableUrl || "";
+
+    void getCredentialQRCodeApi(credential.id)
+      .then((qr) => {
+        if (!active) return;
+        // Ưu tiên qrCodeData từ backend, nếu không có thì dùng shareableUrl
+        const value = qr.qrCodeData || fallbackUrl;
+        setQrCodeData(value);
+      })
+      .catch(() => {
+        if (!active) return;
+        setQrCodeData(fallbackUrl);
+      })
+      .finally(() => {
+        if (active) {
+          setQrLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [credential]);
+
+  const certificateTitle = useMemo(() => {
+    if (!credential) return "";
+    return (
+      credential.subjectName ||
+      credential.semesterName ||
+      credential.roadmapName ||
+      typeLabels[credential.certificateType] ||
+      credential.certificateType
+    );
+  }, [credential]);
+
+  const handleDownloadPdf = async () => {
+    if (!credential) return;
+    setActionLoading(true);
+    try {
+      const blob = await downloadCredentialPdfApi(credential.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${(credential as any).credentialId || credential.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      message.success("Đã tải xuống chứng chỉ");
+    } catch (err) {
+      message.error(
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+          "Không thể tải xuống chứng chỉ"
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (value?: string | null, success = "Đã sao chép") => {
+    if (!value) {
+      message.warning("Không có giá trị để sao chép");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(value);
+      message.success(success);
+    } catch {
+      message.error("Không thể sao chép vào clipboard");
+    }
+  };
+
+  const renderStatusTag = () => {
+    if (!credential) return null;
+    return (
+      <Badge
+        status={statusBadgeColors[credential.status.toLowerCase()] || "default"}
+        text={credential.status}
+      />
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="admin-credential-detail loading">
+        <Spin tip="Đang tải thông tin chứng chỉ..." size="large" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-credential-detail">
+        <Alert type="error" message="Không thể tải chứng chỉ" description={error} showIcon />
+      </div>
+    );
+  }
+
+  if (!credential) {
+    return (
+      <div className="admin-credential-detail">
+        <Alert type="warning" message="Không tìm thấy chứng chỉ" showIcon />
+      </div>
+    );
+  }
+
+  const rawQr = (qrCodeData || "") as string;
+  const shareableUrl = ((credential as any).shareableUrl || "") as string;
+  const qrValue = (
+    rawQr && rawQr.length <= 300 ? rawQr : ""
+  ) || shareableUrl.trim();
+
+  return (
+    <div className="admin-credential-detail">
+      <div className="detail-header">
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/admin/credentials")}>
+          Quay lại danh sách
+        </Button>
+        <Space wrap>
+          <Button
+            icon={<DownloadOutlined />}
+            type="primary"
+            loading={actionLoading}
+            onClick={handleDownloadPdf}
+          >
+            Tải PDF
+          </Button>
+          {(credential as any).shareableUrl && (
+            <Button icon={<LinkOutlined />} onClick={() => copyToClipboard((credential as any).shareableUrl, "Đã sao chép liên kết")}>Sao chép liên kết</Button>
+          )}
+          <Button icon={<CopyOutlined />} onClick={() => copyToClipboard(credential.credentialHash)}>
+            Sao chép hash
+          </Button>
+        </Space>
+      </div>
+
+      <Row gutter={[24, 24]}>
+        <Col xs={24} lg={16}>
+          <Card className="credential-summary-card" bordered={false}>
+            <Space direction="vertical" size={16} style={{ width: "100%" }}>
+              <Space className="summary-heading" align="center" size={12}>
+                <SafetyCertificateOutlined style={{ fontSize: 32, color: "#1a94fc" }} />
+                <div>
+                  <Text type="secondary">Thông tin chứng chỉ</Text>
+                  <Title level={3} style={{ margin: 0 }}>
+                    {certificateTitle}
+                  </Title>
+                </div>
+                <Tag color="blue">{typeLabels[credential.certificateType] || credential.certificateType}</Tag>
+              </Space>
+              <Descriptions bordered size="small" column={2} layout="horizontal">
+                <Descriptions.Item label="Họ và tên" span={2}>
+                  {credential.studentName || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Mã sinh viên">
+                  {credential.studentCode || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Mã chứng chỉ">
+                  {(credential as any).credentialId || credential.id}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày cấp">
+                  <Space>
+                    <CalendarOutlined />
+                    {formatDateDisplay(credential.issueDate, "Chưa cấp")}
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày hoàn thành">
+                  {formatDateDisplay(credential.completionDate)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái">
+                  {renderStatusTag()}
+                </Descriptions.Item>
+                <Descriptions.Item label="Loại" span={2}>
+                  {typeLabels[credential.certificateType] || credential.certificateType}
+                </Descriptions.Item>
+                <Descriptions.Item label="Điểm chữ">
+                  {credential.letterGrade || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Điểm số">
+                  {credential.finalGrade?.toLocaleString(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2,
+                  }) || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Xếp loại" span={2}>
+                  {credential.classification || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số lần xem">
+                  {(credential as any).viewCount ?? 0}
+                </Descriptions.Item>
+                {(credential as any).verificationHash && (
+                  <Descriptions.Item label="Verification Hash" span={2}>
+                    <Space align="center">
+                      <Text copyable>{(credential as any).verificationHash}</Text>
+                      <Tooltip title="Sao chép hash">
+                        <Button
+                          size="small"
+                          icon={<CopyOutlined />}
+                          onClick={() => copyToClipboard((credential as any).verificationHash)}
+                        />
+                      </Tooltip>
+                    </Space>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+              <Divider style={{ margin: 0 }} />
+              <Space wrap className="summary-actions">
+                {(credential as any).fileUrl && (
+                  <Button
+                    icon={<DownloadOutlined />}
+                    type="default"
+                    onClick={() => window.open((credential as any).fileUrl, "_blank")}
+                  >
+                    Tải file gốc
+                  </Button>
+                )}
+                {(credential as any).isOnBlockchain ? (
+                  <Tag icon={<BlockOutlined />} color="green">
+                    Đã ghi blockchain
+                  </Tag>
+                ) : (
+                  <Tag icon={<BlockOutlined />} color="default">
+                    Chưa ghi blockchain
+                  </Tag>
+                )}
+              </Space>
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card className="credential-qr-card" bordered={false}>
+            <div className="qr-preview">
+              {qrLoading ? (
+                <Spin />
+              ) : qrValue ? (
+                <QRCode value={qrValue} size={200} />
+              ) : (
+                <Alert
+                  type="warning"
+                  message="Không thể tạo mã QR vì không có liên kết xác thực."
+                  showIcon
+                />
+              )}
+            </div>
+            <Text type="secondary" className="qr-helper">
+              Quét mã để xác thực chứng chỉ
+            </Text>
+            <Space direction="vertical" size={8} className="qr-meta">
+              <Space align="center" size={4}>
+                <QrcodeOutlined />
+                <Text copyable>{credential.credentialHash}</Text>
+              </Space>
+              {credential.blockchainTxHash && (
+                <Space align="center" size={4}>
+                  <BlockOutlined />
+                  <Text copyable>{credential.blockchainTxHash}</Text>
+                </Space>
+              )}
+              {(credential as any).shareableUrl && (
+                <Button
+                  type="link"
+                  icon={<LinkOutlined />}
+                  onClick={() => copyToClipboard((credential as any).shareableUrl, "Đã sao chép liên kết xác thực")}
+                >
+                  Liên kết xác thực
+                </Button>
+              )}
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default CredentialDetail;

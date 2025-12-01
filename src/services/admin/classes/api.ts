@@ -10,6 +10,7 @@ import type {
 } from "../../../types/Class";
 import type { SubjectDto } from "../../../types/Subject";
 import type { TeacherOption } from "../../../types/Teacher";
+import type { SlotDto, CreateSlotRequest, UpdateSlotRequest } from "../../../types/Slot";
 
 const normalizeItems = <T>(payload: {
   data?: T[];
@@ -95,6 +96,35 @@ export const fetchTeachersApi = async (): Promise<TeacherOption[]> => {
   return normalizeItems<TeacherOption>(response.data);
 };
 
+// New API to fetch teachers with full details for filter
+export interface TeacherFilterOption {
+  id: string;
+  teacherCode: string;
+  fullName: string;
+  email: string;
+  hireDate: string;
+  specialization: string;
+  phoneNumber: string;
+  isActive: boolean;
+  totalClasses: number;
+  profileImageUrl?: string | null;
+}
+
+export interface TeachersResponse {
+  items: TeacherFilterOption[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export const fetchTeachersForFilterApi = async (): Promise<TeacherFilterOption[]> => {
+  const response = await api.get<TeachersResponse>("/teachers");
+  return response.data.items || [];
+};
+
 export const getClassByIdApi = async (id: string): Promise<ClassSummary> => {
   const response = await api.get<ClassSummary>(`/Classes/${id}`);
   return response.data;
@@ -107,8 +137,29 @@ export const updateClassApi = async (
   await api.put(`/Classes/${id}`, payload);
 };
 
+export const getClassSlotsApi = async (id: string): Promise<SlotDto[]> => {
+  const response = await api.get<{ data?: SlotDto[]; items?: SlotDto[] }>(
+    `/Classes/${id}/slots`
+  );
+  return normalizeItems<SlotDto>(response.data);
+};
+
 export const deleteClassApi = async (id: string): Promise<void> => {
   await api.delete(`/Classes/${id}`);
+};
+
+export const createSlotApi = async (payload: CreateSlotRequest) => {
+  const response = await api.post("/Slots", payload);
+  return response.data;
+};
+
+export const updateSlotApi = async (id: string, payload: UpdateSlotRequest) => {
+  const response = await api.put(`/Slots/${id}`, payload);
+  return response.data;
+};
+
+export const deleteSlotApi = async (id: string) => {
+  await api.delete(`/Slots/${id}`);
 };
 
 export interface StudentRoster {

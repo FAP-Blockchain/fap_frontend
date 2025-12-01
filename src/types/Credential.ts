@@ -1,95 +1,147 @@
-interface Credential {
+// API Response Types (matching backend DTOs)
+interface CredentialDto {
   id: string;
-  credentialType: 'degree' | 'certificate' | 'transcript' | 'achievement';
-  title: string;
-  description?: string;
   studentId: string;
   studentName: string;
   studentCode: string;
-  issuerId: string; // Admin/Teacher who issued
-  issuerName: string;
+  certificateType: string;
+  status: string;
   issueDate: string;
-  expiryDate?: string;
-  status: 'active' | 'revoked' | 'expired';
-  blockchainHash?: string; // Hash on blockchain
-  transactionHash?: string; // Blockchain transaction hash
-  ipfsHash?: string; // IPFS hash for document storage
-  metadata: {
-    gpa?: number;
-    credits?: number;
-    grade?: string;
-    course?: string;
-    classId?: string;
-    className?: string;
-    academicYear?: string;
-    semester?: string;
-  };
-  verificationUrl?: string; // Public verification URL
-  qrCode?: string; // QR code for verification
-  createdAt: string;
-  updatedAt: string;
+  credentialHash: string;
+  blockchainTxHash?: string;
+  subjectName?: string;
+  semesterName?: string;
+  roadmapName?: string;
+  finalGrade?: number;
+  letterGrade?: string;
+  classification?: string;
+}
+
+interface CredentialDetailDto extends CredentialDto {
+  templateId?: string;
+  completionDate: string;
+  ipfsHash?: string;
+  issuedBy?: string;
   revokedAt?: string;
   revokedBy?: string;
-  revokedReason?: string;
+  revocationReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface CredentialFormData {
-  credentialType: 'degree' | 'certificate' | 'transcript' | 'achievement';
-  title: string;
-  description?: string;
+interface CertificatePublicDto {
+  id: string;
+  studentName: string;
+  studentCode: string;
+  certificateType: string;
+  subjectName?: string;
+  semesterName?: string;
+  roadmapName?: string;
+  finalGrade?: number;
+  letterGrade?: string;
+  classification?: string;
+  issuedDate: string;
+  completionDate?: string;
+  credentialHash: string;
+  blockchainTxHash?: string;
+  qrCodeData?: string;
+  shareUrl?: string;
+  status: string;
+  verificationStatus?: string;
+  viewCount?: number;
+  verificationHash?: string;
+  credentialNumber?: string;
+  fileUrl?: string;
+}
+
+interface StudentCredentialSummaryDto {
+  totalCredentials: number;
+  completionCertificates: number;
+  subjectCertificates: number;
+  semesterCertificates: number;
+  roadmapCertificates: number;
+  pendingRequests: number;
+}
+
+interface CredentialRequestDto {
+  id: string;
   studentId: string;
-  expiryDate?: Date;
-  metadata: {
-    gpa?: number;
-    credits?: number;
-    grade?: string;
-    course?: string;
-    classId?: string;
-    academicYear?: string;
-    semester?: string;
-  };
+  studentName: string;
+  studentCode: string;
+  certificateType: string;
+  status: string;
+  requestDate: string;
+  processedDate?: string;
+  processedBy?: string;
+  rejectionReason?: string;
+  subjectId?: string;
+  subjectName?: string;
+  semesterId?: string;
+  semesterName?: string;
+  roadmapId?: string;
+  roadmapName?: string;
 }
 
+// Form Data Types
+interface CredentialFormData {
+  studentId: string;
+  templateId?: string;
+  certificateType: string;
+  subjectId?: string;
+  semesterId?: string;
+  roadmapId?: string;
+  completionDate: string;
+  finalGrade?: number;
+  letterGrade?: string;
+  classification?: string;
+}
+
+interface RequestCredentialFormData {
+  certificateType: string;
+  subjectId?: string;
+  semesterId?: string;
+  roadmapId?: string;
+  notes?: string;
+}
+
+// Statistics
 interface CredentialStats {
   total: number;
   active: number;
   revoked: number;
-  expired: number;
+  pending: number;
   thisMonth: number;
   byType: {
-    degree: number;
-    certificate: number;
-    transcript: number;
-    achievement: number;
+    completion: number;
+    subject: number;
+    semester: number;
+    roadmap: number;
   };
 }
 
-interface StudentCredentialDto {
-  id: string;
+// Legacy type for backward compatibility
+interface Credential extends CredentialDetailDto {}
+
+interface StudentCredentialDto extends CredentialDetailDto {
+  // Alias fields used in frontend components
   credentialId: string;
-  certificateType: string;
-  studentName: string | null;
-  studentCode: string;
-  subjectName: string | null;
-  semesterName: string | null;
-  roadmapName: string | null;
-  issuedDate: string;
-  completionDate: string | null;
-  finalGrade: number | null;
-  letterGrade: string | null;
-  classification: string | null;
-  status: string;
-  fileUrl: string | null;
-  shareableUrl: string | null;
-  verificationHash: string | null;
-  viewCount: number;
-  isOnBlockchain: boolean;
-  blockchainTransactionHash: string | null;
+  issuedDate?: string;
+  verificationHash?: string;
+  shareableUrl?: string;
+  isOnBlockchain?: boolean;
+  viewCount?: number;
+  fileUrl?: string;
 }
 
 export type {
   Credential,
+  CredentialDto,
+  CredentialDetailDto,
+  CertificatePublicDto,
+  StudentCredentialSummaryDto,
+  CredentialRequestDto,
   CredentialFormData,
+  RequestCredentialFormData,
   CredentialStats,
   StudentCredentialDto,
 };

@@ -1,255 +1,184 @@
 @use "../../../styles/variables" as *;
 
-// Verification Results Styles
-.verification-results {
-  .result-header {
-    border-radius: 16px;
-    margin-bottom: 24px;
-    overflow: hidden;
+.verification-results-page {
+	padding: 24px;
+	background: var(--neutral-light, #f5f7fb);
 
-    &.success {
-      background: linear-gradient(135deg, #f6ffed, #e6f7ff);
-      border-color: #52c41a;
-    }
+	.results-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-bottom: 24px;
 
-    &.failed {
-      background: linear-gradient(135deg, #fff2f0, #fff1f0);
-      border-color: #ff4d4f;
-    }
+		.certificate-actions {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 4px;
 
-    .ant-result-title {
-      .ant-typography-title-2 {
-        color: #262626;
-      }
-    }
+			&__hint {
+				font-size: 12px;
+				margin-top: 4px;
+			}
+		}
+	}
 
-    .ant-result-subtitle {
-      color: #595959;
-    }
-  }
+	.result-card,
+	.certificate-preview-card {
+		border-radius: 16px;
+		background: #fff;
+		box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+	}
 
-  .detail-card {
-    border-radius: 12px;
+	.result-card {
+		padding: 32px;
 
-    .ant-descriptions {
-      .ant-descriptions-item-label {
-        font-weight: 600;
-        color: #595959;
-        background: #fafafa;
-      }
+		.info-row {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			padding: 4px 0;
+			color: #4b5563;
 
-      .ant-descriptions-item-content {
-        background: white;
-        color: #262626;
-      }
-    }
+			.strong-text {
+				font-weight: 600;
+				color: #111827;
+			}
+		}
+	}
 
-    .ant-typography-title-5 {
-      color: #1890ff;
-      margin: 24px 0 16px;
-    }
-  }
+	.certificate-preview-card {
+		padding: 24px;
 
-  // Verification Checklist
-  .check-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 0;
+		.certificate-preview {
+			border-radius: 24px;
+			border: 1px solid #e5e7eb;
+			background: radial-gradient(circle at top left, #eef2ff, #ffffff);
+			padding: 32px 32px 24px;
+			min-height: 320px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
 
-    .anticon {
-      font-size: 16px;
-    }
-  }
+			.certificate-header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				margin-bottom: 24px;
 
-  // Timeline
-  .ant-timeline {
-    .ant-timeline-item {
-      .ant-timeline-item-content {
-        color: #262626;
-        font-weight: 500;
-      }
-    }
-  }
+				.issuer-block {
+					.issuer-name {
+						font-weight: 700;
+						font-size: 18px;
+						color: #111827;
+					}
 
-  // Statistics
-  .ant-statistic {
-    .ant-statistic-title {
-      color: #8c8c8c;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
+					.certificate-type {
+						display: block;
+						font-size: 13px;
+						color: #6b7280;
+					}
+				}
+			}
 
-    .ant-statistic-content {
-      .ant-statistic-content-value {
-        font-weight: 700;
-        font-size: 32px;
-      }
-    }
-  }
+			.certificate-body {
+				text-align: center;
+				padding: 8px 16px 0;
 
-  // Cards
-  .ant-card {
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+				.caption {
+					letter-spacing: 0.25em;
+					font-size: 11px;
+					text-transform: uppercase;
+					color: #9ca3af;
+				}
 
-    .ant-card-head-title {
-      font-weight: 600;
-      color: #262626;
-    }
-  }
+				.recipient {
+					margin: 8px 0 4px;
+					font-size: 28px;
+					color: #111827;
+				}
 
-  // Tags
-  .ant-tag {
-    border-radius: 6px;
-    font-weight: 500;
-    padding: 4px 12px;
+				.description {
+					margin-bottom: 4px;
+					color: #6b7280;
+				}
 
-    &.ant-tag-success {
-      background: #f6ffed;
-      border-color: #b7eb8f;
-      color: #389e0d;
-    }
+				.program {
+					margin: 0 0 8px;
+					font-size: 20px;
+					color: #111827;
+				}
 
-    &.ant-tag-error {
-      background: #fff2f0;
-      border-color: #ffccc7;
-      color: #cf1322;
-    }
+				.details {
+					margin: 0;
+					font-size: 13px;
+					color: #6b7280;
+				}
+			}
 
-    &.ant-tag-warning {
-      background: #fffbe6;
-      border-color: #ffe58f;
-      color: #d46b08;
-    }
+			.certificate-footer {
+				display: flex;
+				align-items: flex-end;
+				justify-content: space-between;
+				margin-top: 24px;
 
-    &.ant-tag-gold {
-      background: #fff7e6;
-      border-color: #ffec8b;
-      color: #d48806;
-      font-weight: 600;
-    }
-  }
+				.signature-block {
+					.signature {
+						width: 120px;
+						height: 40px;
+						border-bottom: 1px solid #9ca3af;
+						margin-bottom: 4px;
+					}
 
-  // Code blocks
-  code.ant-typography {
-    background: #f6f8ff;
-    border: 1px solid #d9e5ff;
-    color: #1890ff;
-    font-family: "Monaco", "Menlo", monospace;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    word-break: break-all;
-  }
+					.ant-typography {
+						font-size: 12px;
+						color: #6b7280;
+					}
+				}
 
-  // Buttons
-  .ant-btn {
-    border-radius: 8px;
-    font-weight: 500;
+				.seal {
+					width: 72px;
+					height: 72px;
+					border-radius: 50%;
+					border: 2px solid #ef4444;
+					color: #ef4444;
+					font-weight: 700;
+					font-size: 18px;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					text-transform: uppercase;
+				}
+			}
+		}
+	}
 
-    &.ant-btn-primary {
-      background: linear-gradient(135deg, #1890ff, $primary-color);
-      border: none;
+	.ant-tag {
+		border-radius: 999px;
+		padding: 2px 12px;
+		font-size: 12px;
+	}
 
-      &:hover {
-        background: linear-gradient(135deg, #0050b3, $primary-color-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(244, 131, 28, 0.3);
-      }
-    }
+	.ant-btn {
+		border-radius: 999px;
+	}
 
-    &.ant-btn-block {
-      margin-bottom: 8px;
+	.ant-modal .ant-modal-content {
+		border-radius: 16px;
+	}
 
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-  }
+	@media (max-width: 768px) {
+		.result-card {
+			padding: 20px;
+		}
 
-  // Result status icons
-  .ant-result-success {
-    .ant-result-icon {
-      .anticon {
-        color: #52c41a;
-      }
-    }
-  }
-
-  .ant-result-error {
-    .ant-result-icon {
-      .anticon {
-        color: #ff4d4f;
-      }
-    }
-  }
-
-  // Alert customization
-  .ant-alert {
-    border-radius: 8px;
-
-    &.ant-alert-error {
-      background: #fff2f0;
-      border-color: #ffccc7;
-
-      .ant-alert-icon {
-        color: #ff4d4f;
-      }
-
-      ul {
-        margin: 8px 0;
-        padding-left: 20px;
-
-        li {
-          margin-bottom: 4px;
-        }
-      }
-    }
-  }
-
-  // Space customizations
-  .ant-space {
-    &.ant-space-vertical {
-      width: 100%;
-    }
-  }
-
-  // QR Modal
-  .ant-modal {
-    .ant-modal-content {
-      border-radius: 12px;
-    }
-  }
-
-  // Responsive design
-  @media (max-width: 768px) {
-    .result-header {
-      .ant-result {
-        .ant-result-extra {
-          .ant-space {
-            flex-direction: column;
-            width: 100%;
-
-            .ant-space-item {
-              width: 100%;
-
-              .ant-btn {
-                width: 100%;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    .ant-descriptions {
-      .ant-descriptions-item {
-        padding-bottom: 12px;
-      }
-    }
-
-    .check-item {
-      justify-content: flex-start;
-    }
-  }
+		.certificate-preview-card {
+			.certificate-preview {
+				padding: 20px 20px 16px;
+			}
+		}
+	}
 }
