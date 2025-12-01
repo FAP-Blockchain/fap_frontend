@@ -3,24 +3,21 @@ import {
   Avatar,
   Button,
   Card,
-  Descriptions,
-  Divider,
-  Empty,
-  message,
-  Row,
   Col,
+  Descriptions,
+  Empty,
+  Row,
   Space,
   Spin,
   Tag,
-  Upload,
-  Table,
   Typography,
+  Upload,
+  message,
 } from "antd";
-import type { ColumnsType } from "antd/es/table";
 import {
-  UploadOutlined,
   ArrowLeftOutlined,
   MailOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import type { UploadRequestOption } from "rc-upload/lib/interface";
 import { useNavigate, useParams } from "react-router-dom";
@@ -30,13 +27,25 @@ import {
 } from "../../../services/admin/users/api";
 import StudentServices from "../../../services/student/api.service";
 import type {
-  StudentDetailDto,
   ClassInfo,
   EnrollmentInfo,
+  StudentDetailDto,
 } from "../../../types/Student";
 import type { UserDto } from "../../../services/admin/users/api";
 import dayjs from "dayjs";
 import "./detail.scss";
+
+const { Title, Text } = Typography;
+
+type UploadApiResponse = {
+  imageUrl?: string;
+  data?: {
+    imageUrl?: string;
+    data?: {
+      imageUrl?: string;
+    };
+  };
+};
 
 const StudentDetailPage: React.FC = () => {
   const { userId } = useParams();
@@ -64,14 +73,12 @@ const StudentDetailPage: React.FC = () => {
             );
             setStudent(studentDetail);
           } catch (error) {
-            console.error("Failed to load student detail:", error);
+            console.error(error);
             message.error("Không thể tải chi tiết sinh viên");
             setStudent(null);
           }
         } else {
-          message.warning(
-            "Không tìm thấy mã sinh viên tương ứng. Vui lòng kiểm tra dữ liệu."
-          );
+          message.warning("Không tìm thấy mã sinh viên tương ứng");
           setStudent(null);
         }
       } else {
@@ -88,16 +95,6 @@ const StudentDetailPage: React.FC = () => {
   useEffect(() => {
     void fetchDetail();
   }, [fetchDetail]);
-
-  type UploadApiResponse = {
-    imageUrl?: string;
-    data?: {
-      imageUrl?: string;
-      data?: {
-        imageUrl?: string;
-      };
-    };
-  };
 
   const handleUpload = async (options: UploadRequestOption) => {
     if (!userId) return;
@@ -118,11 +115,9 @@ const StudentDetailPage: React.FC = () => {
       }
 
       message.success("Cập nhật ảnh đại diện thành công");
-
       setUser((prev) =>
         prev ? { ...prev, profilePictureUrl: imageUrl } : prev
       );
-
       onSuccess?.(res, new XMLHttpRequest());
     } catch (error) {
       console.error(error);
@@ -133,99 +128,17 @@ const StudentDetailPage: React.FC = () => {
     }
   };
 
-  const currentClassColumns: ColumnsType<ClassInfo> = [
-    {
-      title: "Lớp",
-      dataIndex: "classCode",
-      key: "classCode",
-    },
-    {
-      title: "Môn học",
-      dataIndex: "subjectName",
-      key: "subjectName",
-    },
-    {
-      title: "GV phụ trách",
-      dataIndex: "teacherName",
-      key: "teacherName",
-    },
-    {
-      title: "Số tín chỉ",
-      dataIndex: "credits",
-      key: "credits",
-      width: 100,
-    },
-    {
-      title: "Ngày tham gia",
-      dataIndex: "joinedAt",
-      key: "joinedAt",
-      render: (value: string) => dayjs(value).format("DD/MM/YYYY"),
-    },
-  ];
-
-  const enrollmentColumns: ColumnsType<EnrollmentInfo> = [
-    {
-      title: "Lớp đăng ký",
-      dataIndex: "classCode",
-      key: "classCode",
-    },
-    {
-      title: "Môn học",
-      dataIndex: "subjectName",
-      key: "subjectName",
-    },
-    {
-      title: "Giảng viên",
-      dataIndex: "teacherName",
-      key: "teacherName",
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "isApproved",
-      key: "isApproved",
-      render: (isApproved: boolean) => (
-        <Tag color={isApproved ? "success" : "warning"}>
-          {isApproved ? "Đã duyệt" : "Đang chờ"}
-        </Tag>
-      ),
-    },
-    {
-      title: "Ngày đăng ký",
-      dataIndex: "registeredAt",
-      key: "registeredAt",
-      render: (value: string) => dayjs(value).format("DD/MM/YYYY"),
-    },
-  ];
-
   const statistics = useMemo(() => {
     if (!student) {
       return [];
     }
     return [
-      {
-        label: "Tổng đăng ký",
-        value: student.totalEnrollments,
-      },
-      {
-        label: "Đã duyệt",
-        value: student.approvedEnrollments,
-      },
-      {
-        label: "Đang chờ",
-        value: student.pendingEnrollments,
-      },
-      {
-        label: "Lớp hiện tại",
-        value: student.totalClasses,
-      },
-      {
-        label: "Điểm đã nhập",
-        value: student.totalGrades,
-      },
-      {
-        label: "Bản ghi điểm danh",
-        value: student.totalAttendances,
-      },
+      { label: "Tổng đăng ký", value: student.totalEnrollments },
+      { label: "Đã duyệt", value: student.approvedEnrollments },
+      { label: "Đang chờ", value: student.pendingEnrollments },
+      { label: "Lớp hiện tại", value: student.totalClasses },
+      { label: "Điểm đã nhập", value: student.totalGrades },
+      { label: "Điểm danh", value: student.totalAttendances },
     ];
   }, [student]);
 
@@ -238,29 +151,36 @@ const StudentDetailPage: React.FC = () => {
   }
 
   const avatarSrc = user?.profileImageUrl || student?.profileImage;
-  const TypographyText = Typography.Text;
+  const highlightedClasses: ClassInfo[] =
+    student?.currentClasses?.slice(0, 2) ?? [];
+  const highlightedEnrollments: EnrollmentInfo[] =
+    student?.enrollments?.slice(0, 3) ?? [];
 
   return (
     <div className="user-detail-page">
-      <Button
-        icon={<ArrowLeftOutlined />}
-        style={{ marginBottom: 16 }}
-        onClick={() => navigate(-1)}
-      >
-        Quay lại
-      </Button>
+      <div className="page-banner">
+        <div>
+          <Title level={3}>Hồ sơ người dùng</Title>
+          <Text type="secondary">
+            Theo dõi thông tin sinh viên và tình trạng học tập
+          </Text>
+        </div>
+        <Button
+          icon={<ArrowLeftOutlined />}
+          className="ghost-btn"
+          onClick={() => navigate(-1)}
+        >
+          Quay lại
+        </Button>
+      </div>
 
       <Spin spinning={loading}>
         {user ? (
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={8}>
-              <Card className="profile-card">
-                <div className="avatar-section">
-                  <Avatar
-                    size={120}
-                    src={avatarSrc}
-                    style={{ backgroundColor: "#1677ff" }}
-                  >
+          <div className="page-body">
+            <Card className="profile-hero">
+              <div className="hero-content">
+                <div className="hero-avatar">
+                  <Avatar size={120} src={avatarSrc}>
                     {user.fullName?.charAt(0)}
                   </Avatar>
                   <Upload
@@ -271,142 +191,175 @@ const StudentDetailPage: React.FC = () => {
                     <Button
                       icon={<UploadOutlined />}
                       loading={uploading}
-                      style={{ marginTop: 12 }}
+                      size="small"
                     >
                       Đổi ảnh
                     </Button>
                   </Upload>
                 </div>
-                <div className="user-info">
-                  <h2>{user.fullName}</h2>
-                  <Space>
+
+                <div className="hero-info">
+                  <p className="eyebrow">Sinh viên</p>
+                  <Title level={4}>{user.fullName}</Title>
+                  <Space size="small" wrap>
+                    <Tag color={user.isActive ? "success" : "default"}>
+                      {user.isActive ? "Đang hoạt động" : "Vô hiệu hóa"}
+                    </Tag>
+                    <Tag color="processing">
+                      {user.roleName === "Student" ? "Sinh viên" : "Giảng viên"}
+                    </Tag>
+                    {student?.studentCode && (
+                      <Tag color="blue">Mã SV: {student.studentCode}</Tag>
+                    )}
+                  </Space>
+                  <div className="email-chip">
                     <MailOutlined />
                     <span>{user.email}</span>
-                  </Space>
-                  {student?.studentCode && (
-                    <TypographyText type="secondary">
-                      Mã sinh viên: {student.studentCode}
-                    </TypographyText>
-                  )}
-                  <Tag color={user.isActive ? "success" : "default"}>
-                    {user.isActive ? "Đang hoạt động" : "Vô hiệu hóa"}
-                  </Tag>
-                  <Tag>
-                    {user.roleName === "Student" ? "Sinh viên" : "Giảng viên"}
-                  </Tag>
-                </div>
-              </Card>
-
-              {statistics.length > 0 && (
-                <Card title="Thống kê">
-                  <div className="stats-grid">
-                    {statistics.map((item) => (
-                      <div key={item.label} className="stat-item">
-                        <div className="value">{item.value}</div>
-                        <div className="label">{item.label}</div>
-                      </div>
-                    ))}
                   </div>
-                </Card>
-              )}
-            </Col>
+                </div>
 
-            <Col xs={24} md={16}>
-              <Space
-                direction="vertical"
-                size="large"
-                style={{ width: "100%" }}
-              >
-                <Card title="Thông tin liên hệ">
-                  <Descriptions bordered column={2} size="small">
-                    <Descriptions.Item label="Họ tên">
-                      {user.fullName}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Email">
-                      {user.email}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Vai trò">
-                      {user.roleName === "Student" ? "Sinh viên" : "Giảng viên"}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Trạng thái">
-                      <Tag color={user.isActive ? "success" : "default"}>
-                        {user.isActive ? "Đang hoạt động" : "Vô hiệu hóa"}
-                      </Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Ngày tạo">
+                <div className="hero-meta">
+                  <div className="meta-item">
+                    <span>Ngày tạo</span>
+                    <strong>
                       {user.createdAt
                         ? dayjs(user.createdAt).format("DD/MM/YYYY HH:mm")
                         : "—"}
+                    </strong>
+                  </div>
+                  <div className="meta-item">
+                    <span>Ví blockchain</span>
+                    <strong>{student?.walletAddress || "Chưa cập nhật"}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {student && statistics.length > 0 && (
+                <div className="stats-row">
+                  {statistics.slice(0, 4).map((item) => (
+                    <div key={item.label} className="stat-chip">
+                      <div className="value">{item.value}</div>
+                      <div className="label">{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <div className="panels-row">
+              <Card className="info-card">
+                <h4>Thông tin liên hệ</h4>
+                <Descriptions bordered column={1} size="small">
+                  <Descriptions.Item label="Họ tên">
+                    {user.fullName}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Email">
+                    {user.email}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Vai trò">
+                    {user.roleName === "Student" ? "Sinh viên" : "Giảng viên"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Trạng thái">
+                    <Tag color={user.isActive ? "success" : "default"}>
+                      {user.isActive ? "Đang hoạt động" : "Vô hiệu hóa"}
+                    </Tag>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              <Card className="info-card">
+                <h4>Thông tin học sinh</h4>
+                {student ? (
+                  <Descriptions column={2} bordered size="small">
+                    <Descriptions.Item label="Mã sinh viên">
+                      {student.studentCode}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="GPA">
+                      {typeof student.gpa === "number"
+                        ? student.gpa.toFixed(2)
+                        : "Chưa có"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Ngày nhập học">
+                      {dayjs(student.enrollmentDate).format("DD/MM/YYYY")}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Trạng thái">
+                      <Tag color={student.isActive ? "success" : "default"}>
+                        {student.isActive ? "Đang học" : "Tạm ngưng"}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Tốt nghiệp">
+                      {student.isGraduated ? (
+                        <Tag color="blue">Đã tốt nghiệp</Tag>
+                      ) : (
+                        <Tag>Chưa tốt nghiệp</Tag>
+                      )}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Địa chỉ ví Blockchain">
+                      {student.walletAddress || "Chưa cập nhật"}
                     </Descriptions.Item>
                   </Descriptions>
-                </Card>
+                ) : (
+                  <Empty description="Chỉ áp dụng cho vai trò Sinh viên" />
+                )}
+              </Card>
+            </div>
 
-                <Card title="Thông tin học sinh">
-                  {student ? (
-                    <>
-                      <Descriptions column={2} bordered size="small">
-                        <Descriptions.Item label="Mã sinh viên">
-                          {student.studentCode}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="GPA">
-                          {typeof student.gpa === "number"
-                            ? student.gpa.toFixed(2)
-                            : "Chưa có"}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Ngày nhập học">
-                          {dayjs(student.enrollmentDate).format("DD/MM/YYYY")}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Trạng thái">
-                          <Tag color={student.isActive ? "success" : "default"}>
-                            {student.isActive ? "Đang học" : "Tạm ngưng"}
-                          </Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Tốt nghiệp">
-                          {student.isGraduated ? (
-                            <Tag color="blue">Đã tốt nghiệp</Tag>
-                          ) : (
-                            <Tag>Chưa tốt nghiệp</Tag>
-                          )}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Địa chỉ ví Blockchain">
-                          {student.walletAddress || "Chưa cập nhật"}
-                        </Descriptions.Item>
-                      </Descriptions>
-                      <Divider />
-                      <h3>Lớp đang học</h3>
-                      {student.currentClasses &&
-                      student.currentClasses.length > 0 ? (
-                        <Table<ClassInfo>
-                          columns={currentClassColumns}
-                          dataSource={student.currentClasses}
-                          size="small"
-                          rowKey="classId"
-                          pagination={false}
-                        />
-                      ) : (
-                        <Empty description="Chưa có lớp đang học" />
-                      )}
-                      <Divider />
-                      <h3>Lịch sử đăng ký</h3>
-                      {student.enrollments && student.enrollments.length > 0 ? (
-                        <Table<EnrollmentInfo>
-                          columns={enrollmentColumns}
-                          dataSource={student.enrollments}
-                          size="small"
-                          rowKey="id"
-                          pagination={{ pageSize: 5 }}
-                        />
-                      ) : (
-                        <Empty description="Chưa có đăng ký nào" />
-                      )}
-                    </>
-                  ) : (
-                    <Empty description="Chỉ áp dụng cho vai trò Sinh viên" />
-                  )}
-                </Card>
-              </Space>
-            </Col>
-          </Row>
+            {student && (
+              <Card
+                className="info-card activities-card"
+                title="Hoạt động lớp học"
+              >
+                <div className="activities-columns">
+                  <div className="activities-list">
+                    <h4>Lớp đang học</h4>
+                    {highlightedClasses.length > 0 ? (
+                      highlightedClasses.map((cls) => (
+                        <div key={cls.classId} className="list-item">
+                          <div>
+                            <strong>{cls.classCode}</strong>
+                            <p>{cls.subjectName}</p>
+                          </div>
+                          <div className="list-meta">
+                            <span>{cls.teacherName}</span>
+                            <span>
+                              {dayjs(cls.joinedAt).format("DD/MM/YYYY")}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <Empty description="Chưa có lớp đang học" />
+                    )}
+                  </div>
+                  <div className="activities-list">
+                    <h4>Đăng ký gần đây</h4>
+                    {highlightedEnrollments.length > 0 ? (
+                      highlightedEnrollments.map((enroll) => (
+                        <div key={enroll.id} className="list-item">
+                          <div>
+                            <strong>{enroll.classCode}</strong>
+                            <p>{enroll.subjectName}</p>
+                          </div>
+                          <div className="list-meta">
+                            <Tag
+                              color={enroll.isApproved ? "success" : "warning"}
+                            >
+                              {enroll.isApproved ? "Đã duyệt" : "Chờ duyệt"}
+                            </Tag>
+                            <span>
+                              {dayjs(enroll.registeredAt).format("DD/MM/YYYY")}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <Empty description="Chưa có đăng ký nào" />
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
         ) : (
           <Empty description="Không tìm thấy người dùng" />
         )}

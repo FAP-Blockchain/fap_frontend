@@ -94,6 +94,7 @@ export interface AttendanceFilterRequest {
 }
 
 export interface StudentAttendanceDetailDto {
+  profileImageUrl: string;
   attendanceId: string;
   studentId: string;
   studentCode: string;
