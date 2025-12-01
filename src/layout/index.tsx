@@ -42,7 +42,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     const routeNameMap: Record<string, string> = {
       "student-portal": "Cổng sinh viên",
       dashboard: "Bảng điều khiển",
-      credentials: "Chứng chỉ",
+      roadmap: "Lộ trình học tập",
+      credentials: "Chứng chỉ của tôi",
+      "request-credential": "Yêu cầu chứng chỉ",
       timetable: "Thời khóa biểu",
       "attendance-report": "Báo cáo điểm danh",
       "grade-report": "Báo cáo điểm",
@@ -71,7 +73,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         });
       } else {
         // Add sub-routes
-        const subPaths = paths.slice(1);
+        let subPaths = paths.slice(1);
+
+        // Special case: /student-portal/activity/:id
+        // Breadcrumb chỉ hiển thị "Chi tiết hoạt động", không thêm ID slot
+        if (subPaths.length >= 2 && subPaths[0] === "activity") {
+          subPaths = subPaths.slice(0, 1);
+        }
         subPaths.forEach((path, index) => {
           const href = "/" + paths.slice(0, index + 2).join("/");
           const displayName =
