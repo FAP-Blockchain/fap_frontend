@@ -352,9 +352,10 @@ const TeacherClassStudentList: React.FC = () => {
       key: "avatar",
       width: 100,
       align: "center",
-      render: () => (
+      render: (_: unknown, record: StudentAttendanceDetailDto) => (
         <Avatar
           size={64}
+          src={record.profileImageUrl}
           icon={<UserOutlined />}
           style={{
             background: "#f0f0f0",
