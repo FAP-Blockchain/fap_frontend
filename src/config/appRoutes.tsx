@@ -25,7 +25,7 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { lazy } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import type { Permission, RoleCode } from "../constants/roles";
 import { PERMISSIONS, ROLE_CODES } from "../constants/roles";
 import AdminLayout from "../layout";
@@ -482,6 +482,11 @@ export const teacherRoutes: RouteConfig = {
     </AdminLayout>
   ),
   children: [
+    {
+      path: "/teacher",
+      element: <Navigate to="/teacher/schedule" replace />,
+      showInMenu: false,
+    },
     {
       path: "/teacher/schedule",
       element: <TeacherSchedule />,
