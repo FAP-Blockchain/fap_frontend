@@ -168,6 +168,12 @@ export const adminRoutes: RouteConfig = {
       menuSection: "main",
     },
     {
+      path: "/admin/subjects/:subjectCode",
+      element: <SubjectDetail />,
+      showInMenu: false,
+      allowedRoles: [ROLE_CODES.ADMIN],
+    },
+    {
       path: "/admin/semesters",
       element: <SemestersManagement />,
       menuLabel: "Quản lý Học kì",
