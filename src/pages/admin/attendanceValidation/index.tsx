@@ -99,57 +99,57 @@ const AttendanceValidationAdminPage: React.FC = () => {
   ];
 
   const configurationColumns = [
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      width: "50%",
-      align: "center" as const,
-      render: () => {
-        if (error) {
-          return <Tag color="red">Lỗi tải dữ liệu</Tag>;
-        }
-        if (loadingStatus) {
-          return <Tag>Đang tải...</Tag>;
-        }
-        if (!initialized || status === null) {
-          return <Tag>Chưa có dữ liệu</Tag>;
-        }
-        return status.enabled ? (
-          <Tag color="green">Đang BẬT</Tag>
-        ) : (
-          <Tag color="orange">Đang TẮT</Tag>
-        );
-      },
-    },
-    {
-      title: "Thao tác",
-      key: "action",
-      width: "50%",
-      align: "center" as const,
-      render: () => (
-        <Space>
-          <Button
-            size="small"
-            type="primary"
-            disabled={updating}
-            loading={updating}
-            onClick={() => void handleUpdate(true)}
-          >
-            Bật validate
-          </Button>
-          <Button
-            size="small"
-            danger
-            disabled={updating}
-            loading={updating}
-            onClick={() => void handleUpdate(false)}
-          >
-            Tắt validate
-          </Button>
-        </Space>
-      ),
-    },
+            {
+              title: "Trạng thái",
+              dataIndex: "status",
+              key: "status",
+              width: "50%",
+              align: "center" as const,
+              render: () => {
+                if (error) {
+                  return <Tag color="red">Lỗi tải dữ liệu</Tag>;
+                }
+                if (loadingStatus) {
+                  return <Tag>Đang tải...</Tag>;
+                }
+                if (!initialized || status === null) {
+                  return <Tag>Chưa có dữ liệu</Tag>;
+                }
+                return status.enabled ? (
+                  <Tag color="green">Đang BẬT</Tag>
+                ) : (
+                  <Tag color="orange">Đang TẮT</Tag>
+                );
+              },
+            },
+            {
+              title: "Thao tác",
+              key: "action",
+              width: "50%",
+              align: "center" as const,
+              render: () => (
+                <Space>
+                  <Button
+                    size="small"
+                    type="primary"
+                    disabled={updating}
+                    loading={updating}
+                    onClick={() => void handleUpdate(true)}
+                  >
+                    Bật validate
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    disabled={updating}
+                    loading={updating}
+                    onClick={() => void handleUpdate(false)}
+                  >
+                    Tắt validate
+                  </Button>
+                </Space>
+              ),
+            },
   ];
 
   const tabItems = [
@@ -170,14 +170,14 @@ const AttendanceValidationAdminPage: React.FC = () => {
             pagination={false}
             size="middle"
             columns={configurationColumns}
-            dataSource={[
-              {
-                key: "attendance-validation-status",
-                status,
-              },
-            ]}
-          />
-        </Card>
+          dataSource={[
+            {
+              key: "attendance-validation-status",
+              status,
+            },
+          ]}
+        />
+      </Card>
       ),
     },
     {
