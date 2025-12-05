@@ -57,6 +57,7 @@ const TeacherGrading: React.FC = () => {
   const [loadingClassData, setLoadingClassData] = useState(false);
   const [activeTab, setActiveTab] = useState("grading");
   const hasLoadedClassesRef = useRef(false);
+  const [api, contextHolder] = notification.useNotification();
 
   // Load teacher's classes on mount (avoid double-call in React StrictMode)
   useEffect(() => {
@@ -206,16 +207,34 @@ const TeacherGrading: React.FC = () => {
       };
       await updateStudentGradesApi(updateRequest);
 
-      // Toast FE thuần, không dùng message từ BE
-      notification.success({
+      // Hiển thị thông báo thành công
+      api.success({
         message: "Cập nhật điểm thành công",
-        description: `Điểm của sinh viên ${student.fullName} đã được cập nhật.`,
+        description: `Điểm của sinh viên ${student.fullName} đã được cập nhật thành công.`,
         placement: "topRight",
-        duration: 3,
+        duration: 4,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error saving/updating grades:", error);
-      message.error("Có lỗi xảy ra khi cập nhật điểm!");
+
+      // Lấy thông báo lỗi từ API response
+      const errorMessage =
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        )?.response?.data?.detail ||
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ||
+        (error as { message?: string })?.message ||
+        "Có lỗi xảy ra khi cập nhật điểm. Vui lòng thử lại.";
+
+      api.error({
+        message: "Lỗi cập nhật điểm",
+        description: errorMessage,
+        placement: "topRight",
+        duration: 5,
+      });
     } finally {
       setLoading((prev) => ({ ...prev, [student.studentId]: false }));
     }
@@ -322,62 +341,64 @@ const TeacherGrading: React.FC = () => {
   const columns = buildColumns();
 
   return (
-    <div className="teacher-grading">
-      <div className="grading-header">
-        <h1>Chấm điểm </h1>
-        <div className="grading-controls">
-          <Space>
-            <Spin spinning={loadingClasses}>
-              <Select
-                value={selectedClassId}
-                onChange={setSelectedClassId}
-                style={{ width: 300 }}
-                placeholder="Chọn lớp học"
-                loading={loadingClasses}
-              >
-                {classes.map((cls) => (
-                  <Option key={cls.classId} value={cls.classId}>
-                    {cls.classCode} - {cls.subjectName}
-                  </Option>
-                ))}
-              </Select>
-            </Spin>
-            <Button icon={<DownloadOutlined />} disabled={!selectedClassId}>
-              Xuất bảng điểm
-            </Button>
-          </Space>
+    <>
+      {contextHolder}
+      <div className="teacher-grading">
+        <div className="grading-header">
+          <h1>Chấm điểm </h1>
+          <div className="grading-controls">
+            <Space>
+              <Spin spinning={loadingClasses}>
+                <Select
+                  value={selectedClassId}
+                  onChange={setSelectedClassId}
+                  style={{ width: 300 }}
+                  placeholder="Chọn lớp học"
+                  loading={loadingClasses}
+                >
+                  {classes.map((cls) => (
+                    <Option key={cls.classId} value={cls.classId}>
+                      {cls.classCode} - {cls.subjectName}
+                    </Option>
+                  ))}
+                </Select>
+              </Spin>
+              <Button icon={<DownloadOutlined />} disabled={!selectedClassId}>
+                Xuất bảng điểm
+              </Button>
+            </Space>
+          </div>
         </div>
-      </div>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab="Chấm điểm" key="grading">
-          <Spin spinning={loadingClassData}>
-            {selectedClass && (
-              <Alert
-                message={`Lớp: ${selectedClass.classCode} - ${selectedClass.subjectName}`}
-                type="info"
-                showIcon
-                style={{ marginBottom: 24 }}
-              />
-            )}
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <TabPane tab="Chấm điểm" key="grading">
+            <Spin spinning={loadingClassData}>
+              {selectedClass && (
+                <Alert
+                  message={`Lớp: ${selectedClass.classCode} - ${selectedClass.subjectName}`}
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 24 }}
+                />
+              )}
 
-            {/* Grading Table */}
-            <Card>
-              <Table
-                dataSource={students}
-                columns={columns}
-                rowKey="studentId"
-                pagination={false}
-                size="middle"
-                scroll={{ x: 1200 }}
-                loading={loadingClassData}
-                className="grading-table"
-              />
-            </Card>
-          </Spin>
-        </TabPane>
+              {/* Grading Table */}
+              <Card>
+                <Table
+                  dataSource={students}
+                  columns={columns}
+                  rowKey="studentId"
+                  pagination={false}
+                  size="middle"
+                  scroll={{ x: 1200 }}
+                  loading={loadingClassData}
+                  className="grading-table"
+                />
+              </Card>
+            </Spin>
+          </TabPane>
 
-        {/* <TabPane tab="Thống kê" key="statistics">
+          {/* <TabPane tab="Thống kê" key="statistics">
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
               <Card title="Phân bố điểm số" extra={<BarChartOutlined />}>
@@ -419,8 +440,9 @@ const TeacherGrading: React.FC = () => {
             </Col>
           </Row>
         </TabPane> */}
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </>
   );
 };
 

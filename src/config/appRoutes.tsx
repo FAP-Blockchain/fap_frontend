@@ -343,7 +343,7 @@ export const adminRoutes: RouteConfig = {
     {
       path: "/admin/attendance-validation",
       element: <AttendanceValidationAdminPage />,
-      menuLabel: "Cấu hình ngày điểm danh",
+      menuLabel: "Cấu hình",
       menuIcon: <CheckCircleOutlined />,
       showInMenu: true,
       allowedRoles: [ROLE_CODES.ADMIN],

@@ -69,9 +69,9 @@ const TeacherClassStudentList: React.FC = () => {
   const isFetchingRef = useRef(false);
 
   useEffect(() => {
-    const slotId = state.slotId;
+      const slotId = state.slotId;
     
-    if (!slotId) {
+      if (!slotId) {
       setSlotAttendance(null);
       setAttendanceData({});
       fetchedSlotIdRef.current = null;
@@ -86,8 +86,8 @@ const TeacherClassStudentList: React.FC = () => {
 
     // Prevent duplicate calls for the same slotId
     if (fetchedSlotIdRef.current === slotId || isFetchingRef.current) {
-      return;
-    }
+        return;
+      }
 
     const fetchSlotAttendance = async () => {
       isFetchingRef.current = true;

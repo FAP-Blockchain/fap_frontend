@@ -266,7 +266,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       classes: "Lớp học",
       teachers: "Giảng viên",
       students: "Sinh viên",
-      "attendance-validation": "Cấu hình ngày điểm danh",
+      "attendance-validation": "Cấu hình",
       schedule: "Lịch giảng dạy",
       grading: "Chấm điểm",
     };
