@@ -11,7 +11,6 @@ import {
   Form,
   Input,
   notification,
-  Tag,
   TimePicker,
   Spin,
 } from "antd";
@@ -92,18 +91,6 @@ function TimeSlotsManagement() {
             Thời lượng: {record.durationMinutes} phút
           </div>
         </div>
-      ),
-    },
-    {
-      title: "Tổng số slot",
-      dataIndex: "totalSlots",
-      key: "totalSlots",
-      width: 120,
-      align: "center" as const,
-      render: (total: number) => (
-        <Tag color="blue" style={{ fontSize: "14px", padding: "4px 12px" }}>
-          {total} slot
-            </Tag>
       ),
     },
     {
@@ -457,9 +444,6 @@ function TimeSlotsManagement() {
                 <div style={{ fontSize: "12px", color: "#666" }}>
                   <div>
                     <strong>Thời lượng:</strong> {editingSlot.durationMinutes} phút
-                  </div>
-                  <div style={{ marginTop: "4px" }}>
-                    <strong>Tổng số slot:</strong> {editingSlot.totalSlots} slot
                   </div>
                 </div>
               </div>
