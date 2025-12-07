@@ -96,6 +96,28 @@ export interface UpdateGradesRequest {
   }>;
 }
 
+// On-chain DTOs
+export interface GradeOnChainPrepareDto {
+  gradeId: string;
+  studentId: string;
+  studentWalletAddress: string;
+  classId: string;
+  componentName: string;
+  score: number;
+  maxScore: number;
+  onChainClassId: number;
+  onChainScore: number;
+  onChainMaxScore: number;
+}
+
+export interface SaveGradeOnChainRequest {
+  transactionHash: string;
+  blockNumber?: number;
+  chainId?: number;
+  contractAddress?: string;
+  onChainGradeId?: number;
+}
+
 // Generic response type for grade operations (kept simple because
 // backend GradeResponse has a slightly different shape)
 export interface SubmitGradesResponse {
@@ -259,6 +281,8 @@ export const getClassGradesApi = async (
   gradeComponentId: string;
   gradeId: string;
   score: number;
+  onChainTxHash?: string | null;
+  onChainGradeId?: number | null;
 }>> => {
   const response = await api.get<{
     students?: Array<{
@@ -267,6 +291,8 @@ export const getClassGradesApi = async (
         gradeId?: string;
         gradeComponentId: string;
         score?: number;
+        onChainTxHash?: string | null;
+        onChainGradeId?: number | null;
       }>;
     }>;
   }>(`/Classes/${classId}/grades`);
@@ -276,6 +302,8 @@ export const getClassGradesApi = async (
     gradeComponentId: string;
     gradeId: string;
     score: number;
+    onChainTxHash?: string | null;
+    onChainGradeId?: number | null;
   }> = [];
   
   if (response.data?.students) {
@@ -293,6 +321,8 @@ export const getClassGradesApi = async (
               gradeComponentId: grade.gradeComponentId,
               gradeId: grade.gradeId,
               score: normalizedScore,
+              onChainTxHash: grade.onChainTxHash ?? null,
+              onChainGradeId: grade.onChainGradeId ?? null,
             });
           }
         });
@@ -332,5 +362,29 @@ export const updateStudentGradesApi = async (
       score: grade.score,
     })),
   });
+};
+
+/**
+ * Prepare on-chain payload for a specific grade
+ * GET /api/grades/{gradeId}/on-chain/prepare
+ */
+export const prepareGradeOnChainApi = async (
+  gradeId: string
+): Promise<GradeOnChainPrepareDto | null> => {
+  const response = await api.get<GradeOnChainPrepareDto | null>(
+    `/grades/${gradeId}/on-chain/prepare`
+  );
+  return response.data;
+};
+
+/**
+ * Save on-chain transaction info for a grade
+ * POST /api/grades/{gradeId}/on-chain
+ */
+export const saveGradeOnChainApi = async (
+  gradeId: string,
+  payload: SaveGradeOnChainRequest
+): Promise<void> => {
+  await api.post(`/grades/${gradeId}/on-chain`, payload);
 };
 

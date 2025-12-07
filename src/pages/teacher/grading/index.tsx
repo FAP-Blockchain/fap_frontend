@@ -21,11 +21,15 @@ import {
   getGradeComponentsApi,
   getClassGradesApi,
   updateStudentGradesApi,
+  prepareGradeOnChainApi,
+  saveGradeOnChainApi,
   type TeachingClass,
   type ClassStudent,
   type GradeComponent,
   type ClassDetail,
 } from "../../../services/teacher/grading/api";
+import { getGradeManagementContract } from "../../../blockchain/grade";
+import type { GradeManagementContract } from "../../../blockchain/grade";
 import "./index.scss";
 
 const { Option } = Select;
@@ -42,6 +46,12 @@ interface GradeIdMap {
   };
 }
 
+interface GradeOnChainStatusMap {
+  [studentId: string]: {
+    [gradeComponentId: string]: boolean; // true nếu điểm đã on-chain
+  };
+}
+
 const TeacherGrading: React.FC = () => {
   const [classes, setClasses] = useState<TeachingClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
@@ -52,12 +62,14 @@ const TeacherGrading: React.FC = () => {
     Record<string, StudentGrade>
   >({});
   const [gradeIdMap, setGradeIdMap] = useState<GradeIdMap>({});
+  const [gradeOnChainStatus, setGradeOnChainStatus] = useState<GradeOnChainStatusMap>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingClassData, setLoadingClassData] = useState(false);
   const [activeTab, setActiveTab] = useState("grading");
   const hasLoadedClassesRef = useRef(false);
   const [api, contextHolder] = notification.useNotification();
+  const [onChainLoading, setOnChainLoading] = useState<Record<string, boolean>>({});
 
   // Load teacher's classes on mount (avoid double-call in React StrictMode)
   useEffect(() => {
@@ -113,12 +125,14 @@ const TeacherGrading: React.FC = () => {
       // Initialize student grades and gradeIdMap from existing grades
       const initialGrades: Record<string, StudentGrade> = {};
       const initialGradeIdMap: GradeIdMap = {};
+      const initialOnChainStatus: GradeOnChainStatusMap = {};
 
       (classData.students || []).forEach((student) => {
         initialGrades[student.studentId] = {
           studentId: student.studentId,
         };
         initialGradeIdMap[student.studentId] = {};
+        initialOnChainStatus[student.studentId] = {};
       });
 
       // Populate with existing grades
@@ -131,10 +145,17 @@ const TeacherGrading: React.FC = () => {
         }
         initialGradeIdMap[grade.studentId][grade.gradeComponentId] =
           grade.gradeId;
+
+        if (!initialOnChainStatus[grade.studentId]) {
+          initialOnChainStatus[grade.studentId] = {};
+        }
+        initialOnChainStatus[grade.studentId][grade.gradeComponentId] =
+          !!grade.onChainTxHash || !!grade.onChainGradeId;
       });
 
       setStudentGrades(initialGrades);
       setGradeIdMap(initialGradeIdMap);
+      setGradeOnChainStatus(initialOnChainStatus);
     } catch (error) {
       console.error("Error loading class data:", error);
       message.error("Không thể tải thông tin lớp học");
@@ -240,6 +261,99 @@ const TeacherGrading: React.FC = () => {
     }
   };
 
+  const handleRecordGradeOnChain = async (
+    student: ClassStudent,
+    gradeComponentId: string
+  ) => {
+    const gradeId = gradeIdMap[student.studentId]?.[gradeComponentId];
+    if (!gradeId) {
+      message.warning("Chưa có mã điểm để đưa on-chain (hãy lưu điểm trước)");
+      return;
+    }
+
+    const key = `${student.studentId}_${gradeComponentId}`;
+    setOnChainLoading((prev) => ({ ...prev, [key]: true }));
+
+    try {
+      const prepareDto = await prepareGradeOnChainApi(gradeId);
+      if (!prepareDto) {
+        message.error("Backend không thể chuẩn bị payload on-chain cho điểm này");
+        return;
+      }
+
+      const contract: GradeManagementContract = await getGradeManagementContract();
+
+      const tx = await contract.recordGrade(
+        BigInt(prepareDto.onChainClassId),
+        prepareDto.studentWalletAddress,
+        prepareDto.componentName,
+        BigInt(prepareDto.onChainScore),
+        BigInt(prepareDto.onChainMaxScore)
+      );
+
+      const receipt = await tx.wait();
+
+      let onChainGradeId: number | undefined;
+      try {
+        const event = contract.interface.getEvent("GradeRecorded");
+        const topic = event?.topicHash;
+        for (const log of receipt.logs) {
+          if (topic && log.topics[0] === topic) {
+            const parsed = contract.interface.parseLog(log);
+            const gradeIdFromEvent = parsed?.args?.[0];
+            if (gradeIdFromEvent !== undefined) {
+              onChainGradeId = Number(gradeIdFromEvent);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Không parse được GradeRecorded event", e);
+      }
+
+      await saveGradeOnChainApi(gradeId, {
+        transactionHash: receipt.hash,
+        blockNumber: Number(receipt.blockNumber ?? 0),
+        chainId: Number(tx.chainId ?? 0),
+        contractAddress: contract.target.toString(),
+        onChainGradeId,
+      });
+
+      // Cập nhật trạng thái on-chain trong UI
+      setGradeOnChainStatus((prev) => ({
+        ...prev,
+        [student.studentId]: {
+          ...(prev[student.studentId] || {}),
+          [gradeComponentId]: true,
+        },
+      }));
+
+      api.success({
+        message: "Đưa điểm lên blockchain thành công",
+        description: `Sinh viên ${student.fullName} - ${prepareDto.componentName}`,
+        placement: "topRight",
+        duration: 4,
+      });
+    } catch (error: any) {
+      console.error("Error recording grade on-chain", error);
+
+      const metamaskMsg =
+        error?.reason ||
+        error?.data?.message ||
+        error?.message ||
+        "Có lỗi khi gọi hợp đồng GradeManagement";
+
+      api.error({
+        message: "Lỗi đưa điểm lên blockchain",
+        description: metamaskMsg,
+        placement: "topRight",
+        duration: 6,
+      });
+    } finally {
+      setOnChainLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
   // Build dynamic columns based on grade components
   const buildColumns = (): ColumnsType<ClassStudent> => {
     const baseColumns: ColumnsType<ClassStudent> = [
@@ -287,9 +401,13 @@ const TeacherGrading: React.FC = () => {
         const studentGrade = studentGrades[student.studentId] || {};
         const score = Number(studentGrade[component.id]) || 0;
         const maxScore = component.maxScore || 10;
+        const onChainKey = `${student.studentId}_${component.id}`;
+        const isOnChainLoading = onChainLoading[onChainKey] || false;
+        const isOnChainDone =
+          gradeOnChainStatus[student.studentId]?.[component.id] || false;
 
         return (
-          <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <InputNumber
               min={0}
               max={maxScore}
@@ -302,9 +420,16 @@ const TeacherGrading: React.FC = () => {
               style={{ width: 80 }}
               precision={1}
             />
-            <span style={{ marginLeft: 8, color: "#8c8c8c" }}>
-              / {maxScore}
-            </span>
+            <span style={{ color: "#8c8c8c" }}>/ {maxScore}</span>
+            <Button
+              type={isOnChainDone ? "default" : "link"}
+              size="small"
+              loading={isOnChainLoading}
+              onClick={() => handleRecordGradeOnChain(student, component.id)}
+              disabled={isOnChainDone}
+            >
+              {isOnChainDone ? "Đã on-chain" : "On-chain"}
+            </Button>
           </div>
         );
       },
