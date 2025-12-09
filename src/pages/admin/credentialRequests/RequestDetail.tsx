@@ -127,7 +127,12 @@ const CredentialRequestDetailAdmin: React.FC = () => {
         adminNotes: values.adminNotes,
       } as any);
       setApprovedCredential(approved);
-      message.success("Đã phê duyệt đơn yêu cầu nội bộ. Bây giờ hãy ký on-chain.");
+      notificationApi.success({
+        message: "Phê duyệt thành công",
+        description: "Đã phê duyệt đơn yêu cầu nội bộ. Bây giờ hãy ký on-chain.",
+        placement: "topRight",
+        duration: 4,
+      });
       setApproveModalVisible(false);
       form.resetFields();
       loadRequest();
