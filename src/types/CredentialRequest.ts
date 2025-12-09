@@ -4,7 +4,11 @@
  */
 
 export interface RequestCredentialRequest {
-  certificateType: "SubjectCompletion" | "SemesterCompletion" | "RoadmapCompletion";
+  certificateType:
+    | "SubjectCompletion"
+    | "SemesterCompletion"
+    | "RoadmapCompletion"
+    | "CurriculumCompletion";
   subjectId?: string;
   semesterId?: string;
   roadmapId?: string;

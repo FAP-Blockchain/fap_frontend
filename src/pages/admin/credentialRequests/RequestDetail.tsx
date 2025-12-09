@@ -13,6 +13,7 @@ import {
   Form,
   Input,
   Select,
+  notification,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -43,6 +44,7 @@ const { Text } = Typography;
 const { Option } = Select;
 
 const CredentialRequestDetailAdmin: React.FC = () => {
+  const [notificationApi, contextHolder] = notification.useNotification();
   const { requestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
   const [request, setRequest] = useState<CredentialRequestDto | null>(null);
@@ -125,16 +127,35 @@ const CredentialRequestDetailAdmin: React.FC = () => {
         adminNotes: values.adminNotes,
       } as any);
       setApprovedCredential(approved);
-      message.success("Đã phê duyệt đơn yêu cầu nội bộ. Bây giờ hãy ký on-chain.");
+      notificationApi.success({
+        message: "Phê duyệt thành công",
+        description: "Đã phê duyệt đơn yêu cầu nội bộ. Bây giờ hãy ký on-chain.",
+        placement: "topRight",
+        duration: 4,
+      });
       setApproveModalVisible(false);
       form.resetFields();
       loadRequest();
-    } catch (error: any) {
-      if (!error?.errorFields) {
-        message.error(
-          error?.response?.data?.detail || "Không thể phê duyệt đơn yêu cầu"
-        );
+    } catch (error: unknown) {
+      if ((error as any)?.errorFields) {
+        return;
       }
+      let errorMessage = "Không thể phê duyệt đơn yêu cầu";
+      if (typeof error === "object" && error !== null) {
+        const errObj = error as any;
+        errorMessage =
+          errObj?.response?.data?.detail ||
+          errObj?.response?.data?.message ||
+          errObj?.detail ||
+          errObj?.message ||
+          errorMessage;
+      }
+      notificationApi.error({
+        message: "Phê duyệt thất bại",
+        description: errorMessage,
+        placement: "topRight",
+        duration: 5,
+      });
     } finally {
       setProcessing(false);
     }
@@ -245,6 +266,7 @@ const CredentialRequestDetailAdmin: React.FC = () => {
 
   return (
     <div className="credential-request-detail-page">
+      {contextHolder}
       <div className="detail-header">
         <div className="header-left">
           <Button

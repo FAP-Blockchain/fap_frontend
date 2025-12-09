@@ -108,9 +108,10 @@ api.interceptors.response.use(
       const { toast } = await import("react-toastify");
       toast.error(message);
     } else if (error.request) {
-      // Network error (no response)
-      const { toast } = await import("react-toastify");
-      toast.error("Cannot connect to server. Please check your network connection.");
+        // Network error (no response) — suppress noisy global toast
+        // Still reject to let caller handle if needed
+        // Optional: log silently
+        // console.warn("Network error, suppressed toast:", error);
       }
     }
 

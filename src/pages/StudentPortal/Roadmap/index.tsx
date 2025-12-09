@@ -34,7 +34,6 @@ import type {
   RecommendedSubjectDto,
 } from "../../../types/Roadmap";
 import type { SemesterDto } from "../../../types/Semester";
-import { fetchSemestersApi } from "../../../services/admin/semesters/api";
 import "./Roadmap.scss";
 
 const { Title, Text } = Typography;
@@ -150,67 +149,11 @@ const Roadmap: React.FC = () => {
     void fetchSummary();
   }, []);
 
-  // Load legacy roadmap (để lấy CanRetake + roadmapId) và danh sách kỳ còn mở
+  // Retake flow tạm thời tắt: không gọi API roadmap/retake cũ
   useEffect(() => {
-    const loadRoadmapAndSemesters = async () => {
-      try {
-        const [roadmap, semestersResponse] = await Promise.all([
-          RoadmapServices.getMyRoadmap(),
-          fetchSemestersApi({
-            pageNumber: 1,
-            pageSize: 100,
-            isClosed: false,
-            sortBy: "EndDate",
-            isDescending: false,
-          }),
-        ]);
-
-        const failedMap: Record<string, string> = {};
-
-        roadmap.semesterGroups.forEach((group) => {
-          group.subjects.forEach((subject) => {
-            if (subject.status === "Failed" && !failedMap[subject.subjectId]) {
-              failedMap[subject.subjectId] = subject.id;
-            }
-          });
-        });
-
-        setFailedRetakeBySubject(failedMap);
-
-        const now = new Date();
-        const futureSemesters = semestersResponse.data.filter(
-          (s) => new Date(s.endDate) > now
-        );
-        setAllSemesters(futureSemesters);
-      } catch {
-        // bỏ qua lỗi nhẹ, không chặn trang roadmap chính
-      }
-    };
-
-    void loadRoadmapAndSemesters();
-  }, []);
-
-  // Load retake options (failed subjects that can be retaken)
-  useEffect(() => {
-    const fetchRetakeOptions = async () => {
-      setLoadingRetakes(true);
-      try {
-        const data = await RoadmapServices.getMyRetakeOptions();
-        // Backend already filters IsRetake = true, nhưng lọc thêm cho chắc
-        setRetakeOptions(data.filter((item) => item.isRetake));
-      } catch (err) {
-        // Không cần show error lớn, chỉ thông báo nhẹ
-        const messageText =
-          (err as { message?: string })?.message ||
-          "Không thể tải danh sách môn cần học lại.";
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        message.info(messageText);
-      } finally {
-        setLoadingRetakes(false);
-      }
-    };
-
-    void fetchRetakeOptions();
+    setFailedRetakeBySubject({});
+    setAllSemesters([]);
+    setRetakeOptions([]);
   }, []);
 
   // Tự động load dữ liệu cho kỳ đầu tiên sau khi có summary
@@ -321,68 +264,9 @@ const Roadmap: React.FC = () => {
   };
 
   const handleSubmitRetake = async () => {
-    try {
-      const values = await retakeForm.validateFields();
-      if (!selectedRetake) return;
-
-      setRetakeModalLoading(true);
-
-      const payload = {
-        semesterId: values.semesterId as string,
-        notes: (values.notes as string | undefined)?.trim() || undefined,
-      };
-
-      const result = await RoadmapServices.planMyRetake(
-        selectedRetake.roadmapId,
-        payload
-      );
-
-      if (!result.success) {
-        message.error(result.message || "Lên kế hoạch học lại thất bại");
-      } else {
-        message.success(result.message || "Đã lên kế hoạch học lại");
-
-        // Refresh lại danh sách môn cần học lại và map CanRetake
-        try {
-          const [retakes, roadmap] = await Promise.all([
-            RoadmapServices.getMyRetakeOptions(),
-            RoadmapServices.getMyRoadmap(),
-          ]);
-
-          setRetakeOptions(retakes.filter((item) => item.isRetake));
-
-          const failedMap: Record<string, string> = {};
-
-          roadmap.semesterGroups.forEach((group) => {
-            group.subjects.forEach((subject) => {
-              if (
-                subject.status === "Failed" &&
-                !failedMap[subject.subjectId]
-              ) {
-                failedMap[subject.subjectId] = subject.id;
-              }
-            });
-          });
-
-          setFailedRetakeBySubject(failedMap);
-        } catch {
-          // nếu refresh fail thì vẫn giữ state cũ
-        }
-      }
-    } catch (err) {
-      // Nếu là lỗi validate của Form thì bỏ qua
-      if ((err as { errorFields?: unknown }).errorFields) {
-        return;
-      }
-      const msg =
-        (err as { message?: string }).message ||
-        "Không thể lên kế hoạch học lại";
-      message.error(msg);
-    } finally {
-      setRetakeModalLoading(false);
-      setRetakeModalVisible(false);
-      setSelectedRetake(null);
-    }
+    message.info("Chức năng học lại tạm thời được tắt. Vui lòng thử lại sau.");
+    setRetakeModalVisible(false);
+    setSelectedRetake(null);
   };
 
   const getColumns = (): ColumnsType<RoadmapCourse> => [
