@@ -190,7 +190,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
               fill="currentColor"
             />
           </svg>
-          <span className="logo-text">FAP Blockchain</span>
+          <span className="logo-text">UAP Blockchain</span>
         </Link>
       </div>
 
