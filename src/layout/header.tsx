@@ -183,7 +183,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             className="logo-icon"
             style={{ width: "32px", height: "32px", objectFit: "contain" }}
           />
-          <span className="logo-text">FAP Blockchain</span>
+          <span className="logo-text">UAP Blockchain</span>
         </Link>
       </div>
 
