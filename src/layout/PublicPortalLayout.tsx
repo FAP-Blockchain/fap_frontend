@@ -31,11 +31,6 @@ const PublicPortalLayout: React.FC = () => {
       label: "Xác thực chứng chỉ",
     },
     {
-      key: "results",
-      icon: <SafetyCertificateOutlined />,
-      label: "Kết quả xác thực",
-    },
-    {
       key: "help",
       icon: <QuestionCircleOutlined />,
       label: "Trợ giúp",
@@ -185,15 +180,15 @@ const PublicPortalLayout: React.FC = () => {
             <div className="footer-section">
               <Title level={5}>Liên hệ</Title>
               <Space direction="vertical" size="small">
-                <Text type="secondary">Email: support@fap.edu.vn</Text>
-                <Text type="secondary">Hotline: 1900-xxxx</Text>
+                <Text type="secondary">Email: hungnpse170107@fpt.edu.vn</Text>
+                <Text type="secondary">Hotline: 0944056171</Text>
               </Space>
             </div>
           </div>
 
           <div className="footer-bottom">
             <Text type="secondary">
-              © {new Date().getFullYear()} FAP Education. Tất cả quyền được bảo
+              © {new Date().getFullYear()} UAP Education. Tất cả quyền được bảo
               lưu.
             </Text>
           </div>

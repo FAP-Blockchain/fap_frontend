@@ -17,7 +17,6 @@ import {
   FileProtectOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-  GlobalOutlined,
   RocketOutlined,
 } from "@ant-design/icons";
 import "./Home.scss";
@@ -59,12 +58,6 @@ const PublicHome: React.FC = () => {
       title: "100% An toàn",
       description: "Xác thực chống giả mạo bằng công nghệ blockchain",
       color: "#f6ffed",
-    },
-    {
-      icon: <GlobalOutlined style={{ fontSize: 48, color: "#1890ff" }} />,
-      title: "Công nhận toàn cầu",
-      description: "Được xác thực bởi 500+ tổ chức trên toàn thế giới",
-      color: "#e6f7ff",
     },
     {
       icon: <FileProtectOutlined style={{ fontSize: 48, color: "#36cfc9" }} />,
@@ -171,7 +164,7 @@ const PublicHome: React.FC = () => {
         </Title>
         <Row gutter={[24, 24]}>
           {features.map((feature, index) => (
-            <Col xs={24} sm={12} md={6} key={index}>
+            <Col xs={24} sm={12} md={8} key={index}>
               <Card
                 hoverable
                 className="feature-card"

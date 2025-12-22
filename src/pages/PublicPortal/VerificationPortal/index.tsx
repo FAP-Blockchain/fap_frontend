@@ -19,13 +19,10 @@ import {
 import {
   QrcodeOutlined,
   SearchOutlined,
-  FileTextOutlined,
   CameraOutlined,
   UploadOutlined,
-  SafetyCertificateOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
-import type { UploadProps } from "antd";
 import { notification } from "antd";
 import { BrowserQRCodeReader } from "@zxing/browser";
 import CredentialServices from "../../../services/credential/api.service";
@@ -40,7 +37,6 @@ const VerificationPortal: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [credentialId, setCredentialId] = useState("");
-  const [uploadedFile, setUploadedFile] = useState<any>(null);
 	const [isDecodingQr, setIsDecodingQr] = useState(false);
   const qrReaderRef = useRef<BrowserQRCodeReader | null>(null);
   const [notificationApi, notificationContextHolder] = notification.useNotification();
@@ -198,8 +194,6 @@ const VerificationPortal: React.FC = () => {
 
   // Decode QR từ file ảnh (tạm thời yêu cầu user đọc text QR và dán)
   const handleQrImageUploaded = async (file: File) => {
-    setUploadedFile(file);
-
     const qrText = await decodeQrFromFile(file);
     if (!qrText) {
       message.error("Không đọc được mã QR từ ảnh. Vui lòng thử lại với ảnh rõ hơn.");
@@ -307,50 +301,6 @@ const VerificationPortal: React.FC = () => {
     } finally {
       setIsVerifying(false);
     }
-  };
-
-  // File upload verification
-  const uploadProps: UploadProps = {
-    name: "file",
-    multiple: false,
-    accept: ".pdf,.jpg,.jpeg,.png",
-    beforeUpload: (file) => {
-      const isValidType = [
-        "application/pdf",
-      "image/jpeg",
-      "image/png",
-    ].includes(file.type);
-      if (!isValidType) {
-        message.error("Bạn chỉ có thể tải lên file PDF, JPG hoặc PNG!");
-        return false;
-      }
-      const isLt10M = file.size / 1024 / 1024 < 10;
-      if (!isLt10M) {
-        message.error("File phải nhỏ hơn 10MB!");
-        return false;
-      }
-
-      setUploadedFile(file);
-      return false; // Prevent automatic upload
-    },
-    onRemove: () => {
-      setUploadedFile(null);
-    },
-  };
-
-  const handleFileVerification = () => {
-    if (!uploadedFile) {
-      notificationApi.error({
-        message: "Thiếu file chứng chỉ",
-        description: "Vui lòng tải lên file chứng chỉ trước khi xác thực.",
-      });
-      return;
-    }
-
-    notificationApi.info({
-      message: "Đang phát triển",
-      description: "Chức năng phân tích file sẽ được hỗ trợ trong phiên bản sau.",
-    });
   };
 
   const tabItems = [
@@ -510,82 +460,6 @@ const VerificationPortal: React.FC = () => {
         </div>
       ),
     },
-    {
-      key: "file",
-      label: (
-        <span>
-          <FileTextOutlined />
-          Tải lên file
-        </span>
-      ),
-      children: (
-        <div className="verification-method">
-          <div className="method-header">
-            <Title
-              level={3}
-              style={{ textAlign: "center", margin: "0 0 16px" }}
-            >
-              Tải lên file chứng chỉ
-            </Title>
-            <Paragraph style={{ textAlign: "center", color: "#8c8c8c" }}>
-              Tải lên bản sao kỹ thuật số của chứng chỉ để phân tích xác thực
-            </Paragraph>
-          </div>
-
-          <div
-            className="upload-section"
-            style={{ maxWidth: 600, margin: "0 auto" }}
-          >
-            <Upload.Dragger {...uploadProps} className="credential-uploader">
-              <p className="ant-upload-drag-icon">
-                <UploadOutlined style={{ color: "#1990FF" }} />
-              </p>
-              <p className="ant-upload-text">
-                Nhấp hoặc kéo file chứng chỉ vào khu vực này để tải lên
-              </p>
-              <p className="ant-upload-hint">
-                Hỗ trợ file PDF, JPG, PNG tối đa 10MB. Đảm bảo chứng chỉ có mã QR hoặc thông tin xác thực.
-              </p>
-            </Upload.Dragger>
-
-            {uploadedFile && (
-              <div className="uploaded-file-info">
-                <Alert
-                  message="File sẵn sàng để xác thực"
-                  description={`${uploadedFile.name} (${(
-                    uploadedFile.size /
-                    1024 /
-                    1024
-                  ).toFixed(2)} MB)`}
-                  type="success"
-                  showIcon
-                  style={{ marginTop: 16 }}
-                />
-
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<SafetyCertificateOutlined />}
-                  onClick={handleFileVerification}
-                  loading={isVerifying}
-                  style={{ marginTop: 16, width: "100%" }}
-                >
-                  Phân tích & Xác thực file
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <Alert
-            message="Xử lý file"
-            description="Hệ thống AI của chúng tôi sẽ trích xuất dữ liệu xác thực từ các file đã tải lên và đối chiếu với hồ sơ blockchain."
-            type="info"
-            showIcon
-            style={{ marginTop: 24 }}
-          />
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -626,7 +500,7 @@ const VerificationPortal: React.FC = () => {
 
       {/* Help Section */}
       <Row gutter={[24, 24]} style={{ marginTop: 32 }}>
-        <Col xs={24} md={8}>
+        <Col xs={24} md={12}>
           <Card hoverable className="help-card">
             <QrcodeOutlined
               style={{ fontSize: 32, color: "#52c41a", marginBottom: 16 }}
@@ -637,7 +511,7 @@ const VerificationPortal: React.FC = () => {
             </Text>
           </Card>
         </Col>
-        <Col xs={24} md={8}>
+        <Col xs={24} md={12}>
           <Card hoverable className="help-card">
             <SearchOutlined
               style={{ fontSize: 32, color: "#1890ff", marginBottom: 16 }}
@@ -645,17 +519,6 @@ const VerificationPortal: React.FC = () => {
             <Title level={4}>Nhập thủ công</Title>
             <Text type="secondary">
               Nhập ID chứng chỉ thủ công khi mã QR không có sẵn.
-            </Text>
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card hoverable className="help-card">
-            <FileTextOutlined
-              style={{ fontSize: 32, color: "#722ed1", marginBottom: 16 }}
-            />
-            <Title level={4}>Phân tích file</Title>
-            <Text type="secondary">
-              Tải lên file kỹ thuật số để tự động phát hiện và xác thực chứng chỉ.
             </Text>
           </Card>
         </Col>
