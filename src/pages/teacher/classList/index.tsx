@@ -40,6 +40,34 @@ import "./index.scss";
 const { Title, Text } = Typography;
 const { Search } = Input;
 
+const getEthersErrorMessage = (err: unknown) => {
+  const anyErr = err as any;
+  return (
+    anyErr?.response?.data?.detail ||
+    anyErr?.response?.data?.message ||
+    anyErr?.shortMessage ||
+    anyErr?.reason ||
+    anyErr?.data?.message ||
+    anyErr?.info?.error?.message ||
+    anyErr?.error?.message ||
+    anyErr?.message ||
+    "Không thể ghi on-chain cho bản ghi này"
+  );
+};
+
+const isRpcEndpointUnavailable = (err: unknown) => {
+  const anyErr = err as any;
+  const msg = String(
+    anyErr?.info?.error?.message ||
+      anyErr?.data?.message ||
+      anyErr?.error?.message ||
+      anyErr?.message ||
+      ""
+  ).toLowerCase();
+  const httpStatus = anyErr?.error?.data?.httpStatus || anyErr?.data?.httpStatus;
+  return msg.includes("rpc endpoint not found") || msg.includes("unavailable") || httpStatus === 404;
+};
+
 const TeacherClassStudentList: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -520,9 +548,10 @@ const TeacherClassStudentList: React.FC = () => {
                     duration: 4,
                   });
                 } catch (err) {
-                  const errorMessage =
-                    (err as { message?: string })?.message ||
-                    "Không thể ghi on-chain cho bản ghi này";
+                  const baseMessage = getEthersErrorMessage(err);
+                  const errorMessage = isRpcEndpointUnavailable(err)
+                    ? `${baseMessage}. Kiểm tra lại RPC URL của mạng trong MetaMask (đúng host/port, ví dụ :22000) và đảm bảo VM/gateway đang chạy.`
+                    : baseMessage;
                   api.error({
                     message: "Lỗi on-chain",
                     description: errorMessage,

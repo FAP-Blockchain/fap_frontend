@@ -21,7 +21,14 @@ export async function getBrowserProvider() {
   }
 
   const provider = new BrowserProvider(window.ethereum as any);
-  await provider.send("eth_requestAccounts", []);
+
+  // Avoid spamming `eth_requestAccounts` (can cause MetaMask -32002 pending errors).
+  // If already connected, `eth_accounts` returns available accounts.
+  const accounts = (await provider.send("eth_accounts", [])) as string[];
+  if (!accounts || accounts.length === 0) {
+    await provider.send("eth_requestAccounts", []);
+  }
+
   return provider;
 }
 
@@ -55,6 +62,8 @@ export async function ensureCorrectNetwork(expectedChainIdHex?: string) {
   })) as string;
 
   if (expectedChainIdHex && chainId !== expectedChainIdHex) {
-    throw new Error("Vui lòng chuyển đúng mạng trong MetaMask trước khi tiếp tục.");
+    throw new Error(
+      `Vui lòng chuyển đúng mạng trong MetaMask trước khi tiếp tục. (Hiện tại: ${chainId}, yêu cầu: ${expectedChainIdHex})`
+    );
   }
 }
