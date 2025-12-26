@@ -128,7 +128,7 @@ const CredentialRequestsPage: React.FC = () => {
   const formatDate = (value?: string) => {
     if (!value) return "-";
     // Parse UTC time từ ISO string và convert sang GMT+7 (+7 giờ)
-    const d = dayjs.utc(value).utcOffset(7);
+    const d = dayjs.utc(value).add(7, "hour");
     return d.isValid() ? d.format("DD/MM/YYYY HH:mm") : value;
   };
 
