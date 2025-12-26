@@ -17,6 +17,10 @@ import {
   Tag,
   Typography,
   notification,
+  Table,
+  Row,
+  Col,
+  Select,
 } from "antd";
 import {
   BookOutlined,
@@ -26,9 +30,18 @@ import {
   ClockCircleOutlined,
   CheckOutlined,
   CloseOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import type { ColumnsType } from "antd/es/table";
 import RoadmapServices from "../../../services/roadmap/api.service";
+
+// Cấu hình dayjs UTC plugin
+dayjs.extend(utc);
 import {
   createCredentialRequest,
   getMyCredentialRequests,
@@ -49,6 +62,8 @@ import "./RequestCredential.scss";
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 const { TextArea } = Input;
+const { Search } = Input;
+const { Option } = Select;
 
 const RequestCredential: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -72,6 +87,10 @@ const RequestCredential: React.FC = () => {
   const [activeSemesterKey, setActiveSemesterKey] = useState<
     string | string[]
   >([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     const loadData = async () => {
@@ -220,48 +239,127 @@ const RequestCredential: React.FC = () => {
     }
   };
 
-  const getRequestStatusTag = (status: string) => {
-    const statusMap: Record<
-      string,
-      { color: string; text: string; icon: React.ReactNode }
-    > = {
-      Pending: {
-        color: "warning",
-        text: "Đang chờ duyệt",
-        icon: <ClockCircleOutlined />,
-      },
-      Approved: {
-        color: "success",
-        text: "Đã được duyệt",
-        icon: <CheckOutlined />,
-      },
-      Rejected: {
-        color: "error",
-        text: "Đã bị từ chối",
-        icon: <CloseOutlined />,
-      },
-    };
-
-    const meta = statusMap[status] || {
-      color: "default",
-      text: status,
-      icon: null,
-    };
-    return (
-      <Tag
-        color={meta.color}
-        icon={meta.icon}
-        style={{
-          borderRadius: "8px",
-          padding: "4px 12px",
-          fontWeight: 600,
-          fontSize: "13px",
-        }}
-      >
-        {meta.text}
-      </Tag>
-    );
+  const formatDate = (value?: string) => {
+    if (!value) return "-";
+    // Parse UTC time từ ISO string và convert sang GMT+7 (+7 giờ)
+    const d = dayjs.utc(value).add(7, "hour");
+    return d.isValid() ? d.format("DD/MM/YYYY HH:mm") : value;
   };
+
+  const getRequestStatusTag = (status: string) => {
+    const normalized = status?.toLowerCase();
+    switch (normalized) {
+      case "pending":
+        return <Tag color="gold">Đang chờ</Tag>;
+      case "approved":
+        return (
+          <Tag color="green" icon={<CheckCircleOutlined />}>
+            Đã duyệt
+          </Tag>
+        );
+      case "rejected":
+        return (
+          <Tag color="red" icon={<CloseCircleOutlined />}>
+            Đã từ chối
+          </Tag>
+        );
+      default:
+        return <Tag>{status}</Tag>;
+    }
+  };
+
+  // Filter requests based on search and filters
+  const filteredRequests = useMemo(() => {
+    let filtered = [...requests];
+
+    // Filter by search term
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (r) =>
+          r.subjectName?.toLowerCase().includes(searchLower) ||
+          r.certificateType?.toLowerCase().includes(searchLower) ||
+          r.status?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(
+        (r) => r.status?.toLowerCase() === statusFilter.toLowerCase()
+      );
+    }
+
+    // Filter by type
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(
+        (r) => r.certificateType?.toLowerCase() === typeFilter.toLowerCase()
+      );
+    }
+
+    return filtered;
+  }, [requests, searchTerm, statusFilter, typeFilter]);
+
+  const columns: ColumnsType<CredentialRequestDto> = [
+    {
+      title: "Loại chứng chỉ",
+      dataIndex: "certificateType",
+      key: "certificateType",
+      width: 180,
+      render: (type: string) => {
+        const t = type?.toLowerCase();
+        switch (t) {
+          case "subjectcompletion":
+            return <Tag color="blue">Môn học</Tag>;
+          case "curriculumcompletion":
+          case "roadmapcompletion":
+            return <Tag color="purple">Tốt nghiệp</Tag>;
+          case "semestercompletion":
+            return <Tag color="green">Học kỳ</Tag>;
+          default:
+            return <Tag>{type}</Tag>;
+        }
+      },
+    },
+    {
+      title: "Đối tượng",
+      key: "target",
+      width: 250,
+      render: (_, record) => (
+        <div style={{ fontSize: 13 }}>
+          {record.subjectName && <div>Môn: {record.subjectName}</div>}
+          {record.semesterName && <div>Học kỳ: {record.semesterName}</div>}
+          {record.roadmapName && <div>Lộ trình: {record.roadmapName}</div>}
+          {!record.subjectName &&
+            !record.semesterName &&
+            !record.roadmapName && (
+              <div style={{ color: "#888" }}>Chứng chỉ tốt nghiệp</div>
+            )}
+        </div>
+      ),
+    },
+    {
+      title: "Ngày yêu cầu",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 180,
+      render: (value: string) => formatDate(value),
+    },
+    {
+      title: "Ngày xử lý",
+      dataIndex: "processedAt",
+      key: "processedAt",
+      width: 180,
+      render: (value?: string) => formatDate(value),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      width: 140,
+      render: (status: string) => getRequestStatusTag(status),
+    },
+  ];
 
   if (loading) {
     return (
@@ -511,49 +609,78 @@ const RequestCredential: React.FC = () => {
             </>
           }
         >
-          {requests.length === 0 ? (
+          <div className="filters-row compact-layout" style={{ marginBottom: 16 }}>
+            <Row gutter={[8, 8]} align="middle" className="filter-row-compact">
+              <Col xs={24} md={10}>
+                <div className="filter-field">
+                  <label>Tìm kiếm</label>
+                  <Search
+                    placeholder="Tìm theo loại chứng chỉ, môn học..."
+                    allowClear
+                    value={searchTerm}
+                    prefix={<SearchOutlined />}
+                    onSearch={(value) => setSearchTerm(value)}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    size="large"
+                    enterButton="Tìm kiếm"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </Col>
+              <Col xs={12} md={7}>
+                <div className="filter-field">
+                  <label>Trạng thái</label>
+                  <Select
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    style={{ width: "100%" }}
+                    size="middle"
+                    suffixIcon={<FilterOutlined />}
+                  >
+                    <Option value="all">Tất cả trạng thái</Option>
+                    <Option value="Pending">Đang chờ</Option>
+                    <Option value="Approved">Đã duyệt</Option>
+                    <Option value="Rejected">Đã từ chối</Option>
+                  </Select>
+                </div>
+              </Col>
+              <Col xs={12} md={7}>
+                <div className="filter-field">
+                  <label>Loại chứng chỉ</label>
+                  <Select
+                    value={typeFilter}
+                    onChange={setTypeFilter}
+                    style={{ width: "100%" }}
+                    size="middle"
+                    suffixIcon={<FilterOutlined />}
+                  >
+                    <Option value="all">Tất cả loại</Option>
+                    <Option value="SubjectCompletion">Môn học</Option>
+                    <Option value="CurriculumCompletion">Tốt nghiệp</Option>
+                    <Option value="RoadmapCompletion">Tốt nghiệp</Option>
+                  </Select>
+                </div>
+              </Col>
+            </Row>
+          </div>
+
+          {filteredRequests.length === 0 ? (
             <Empty description="Chưa có yêu cầu nào" />
           ) : (
-            <List
-              dataSource={requests}
-              renderItem={(request) => (
-                <List.Item>
-                  <List.Item.Meta
-                    title={
-                      <Space>
-                        {request.certificateType === "SubjectCompletion" && (
-                          <BookOutlined />
-                        )}
-                        {request.certificateType === "RoadmapCompletion" && (
-                          <TrophyOutlined />
-                        )}
-                        <Text strong>
-                          {request.subjectName || "Chứng chỉ tốt nghiệp"}
-                        </Text>
-                        {getRequestStatusTag(request.status)}
-                      </Space>
-                    }
-                    description={
-                      <Space direction="vertical" size={4}>
-                        <Text type="secondary">
-                          Gửi lúc:{" "}
-                          {dayjs(request.createdAt).format("DD/MM/YYYY HH:mm")}
-                        </Text>
-                        {request.studentNotes && (
-                          <Text type="secondary">
-                            Ghi chú: {request.studentNotes}
-                          </Text>
-                        )}
-                        {request.adminNotes && (
-                          <Text type="secondary">
-                            Phản hồi: {request.adminNotes}
-                          </Text>
-                        )}
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
+            <Table
+              className="custom-table"
+              rowKey="id"
+              loading={requestsLoading}
+              columns={columns}
+              dataSource={filteredRequests}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                pageSizeOptions: ["5", "10", "20", "50"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} yêu cầu`,
+              }}
+              scroll={{ x: 1000 }}
             />
           )}
         </Card>
